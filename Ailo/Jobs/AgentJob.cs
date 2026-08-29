@@ -213,7 +213,8 @@ internal sealed class AgentJobExecutionLog : IAsyncDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
         var path = System.IO.Path.Combine(workingDirectory, $"ailo-agent-job-{jobId}.log");
-        var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, 16 * 1024, FileOptions.Asynchronous);
+        // Allow monitoring and diagnostic readers to open the log while the job is writing.
+        var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, 16 * 1024, FileOptions.Asynchronous);
         var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)) { AutoFlush = true };
         return Task.FromResult(new AgentJobExecutionLog(writer, path));
     }
