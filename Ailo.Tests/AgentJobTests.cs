@@ -80,7 +80,15 @@ public sealed class AgentJobTests : IDisposable
         await log.WriteAsync("START test", CancellationToken.None);
 
         Assert.Equal(Path.Combine(_root, "ailo-agent-job-42.log"), log.Path);
-        var content = await File.ReadAllTextAsync(log.Path);
+        await using var stream = new FileStream(
+            log.Path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete,
+            bufferSize: 4 * 1024,
+            FileOptions.Asynchronous);
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
         Assert.Contains("START test", content);
     }
 
