@@ -3,6 +3,7 @@
         xmlns:local="clr-namespace:Ailo.Views"
         x:Class="Ailo.Views.TopmostNotificationWindow"
         x:ClassModifier="internal"
+        Icon="/Assets/ailo.ico"
         Topmost="True"
         CanResize="False"
         SizeToContent="WidthAndHeight"
