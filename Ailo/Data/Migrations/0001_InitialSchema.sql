@@ -51,6 +51,8 @@ CREATE TABLE Messages (
     Status INTEGER NOT NULL,
     ErrorCode TEXT NULL,
     ErrorMessage TEXT NULL,
+    Attachments TEXT NULL,
+    Reasoning TEXT NOT NULL DEFAULT '',
     CreatedAt TEXT NOT NULL,
     UpdatedAt TEXT NOT NULL,
     UNIQUE (ConversationId, SequenceNo)
@@ -61,9 +63,54 @@ CREATE TABLE AppSettings (
     Value TEXT NOT NULL
 );
 
+CREATE TABLE ProviderModels (
+    ProviderId TEXT NOT NULL REFERENCES ApiProviders(Id) ON DELETE CASCADE,
+    ModelId TEXT NOT NULL,
+    IsMultimodal INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (ProviderId, ModelId)
+);
+
+CREATE TABLE McpServers (
+    Id TEXT PRIMARY KEY,
+    Name TEXT NOT NULL,
+    Transport INTEGER NOT NULL,
+    Endpoint TEXT NULL,
+    Command TEXT NULL,
+    ArgumentsJson TEXT NOT NULL DEFAULT '[]',
+    EnvironmentJson TEXT NOT NULL DEFAULT '{}',
+    HeadersJson TEXT NOT NULL DEFAULT '{}',
+    IsEnabled INTEGER NOT NULL DEFAULT 1,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL
+);
+
+CREATE TABLE McpTools (
+    Id TEXT PRIMARY KEY,
+    ServerId TEXT NOT NULL REFERENCES McpServers(Id) ON DELETE CASCADE,
+    Name TEXT NOT NULL,
+    Description TEXT NULL,
+    IsEnabled INTEGER NOT NULL DEFAULT 1,
+    UpdatedAt TEXT NOT NULL,
+    UNIQUE (ServerId, Name)
+);
+
+CREATE TABLE CronJobs (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    JobType TEXT NOT NULL,
+    CronExpression TEXT NOT NULL,
+    ParametersJson TEXT NOT NULL,
+    IsEnabled INTEGER NOT NULL DEFAULT 1,
+    LastRunAtUtc TEXT NULL,
+    NextRunAtUtc TEXT NOT NULL,
+    CreatedAtUtc TEXT NOT NULL,
+    UpdatedAtUtc TEXT NOT NULL
+);
+
 CREATE INDEX IX_Conversations_UpdatedAt ON Conversations(UpdatedAt DESC);
 CREATE INDEX IX_Messages_Conversation_Sequence ON Messages(ConversationId, SequenceNo);
 CREATE INDEX IX_Skills_SortOrder ON Skills(SortOrder);
+CREATE INDEX IX_McpTools_ServerId ON McpTools(ServerId);
+CREATE INDEX IX_CronJobs_NextRunAtUtc ON CronJobs(IsEnabled, NextRunAtUtc);
 
 INSERT INTO Skills (Id, Name, Description, SystemPrompt, Icon, IsBuiltIn, IsEnabled, SortOrder, Version, CreatedAt, UpdatedAt) VALUES
 ('builtin-chat', 'General chat', 'A general-purpose AI assistant', 'You are Ailo, a helpful AI assistant.', '💬', 1, 1, 0, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

@@ -27,7 +27,6 @@ public sealed class DataDirectoryService(
             EnsureSeparateDirectories(currentPaths.ApplicationDataDirectory, destinationDirectory);
             await CheckpointDatabaseAsync(cancellationToken).ConfigureAwait(false);
             CopyDirectory(currentPaths.ApplicationDataDirectory, destinationDirectory, cancellationToken);
-            CopyLegacyLogs(destinationDirectory, cancellationToken);
         }
 
         configuration.SaveDataDirectory(destinationDirectory);
@@ -56,17 +55,6 @@ public sealed class DataDirectoryService(
         path.EndsWith(Path.DirectorySeparatorChar) || path.EndsWith(Path.AltDirectorySeparatorChar)
             ? path
             : string.Concat(path, Path.DirectorySeparatorChar);
-
-    private void CopyLegacyLogs(string destinationDirectory, CancellationToken cancellationToken)
-    {
-        if (!Directory.Exists(currentPaths.LegacyLogsDirectory) ||
-            string.Equals(currentPaths.LegacyLogsDirectory, currentPaths.LogsDirectory, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        CopyDirectory(currentPaths.LegacyLogsDirectory, Path.Combine(destinationDirectory, "logs"), cancellationToken, overwrite: false);
-    }
 
     private static void CopyDirectory(string sourceDirectory, string destinationDirectory, CancellationToken cancellationToken, bool overwrite = true)
     {

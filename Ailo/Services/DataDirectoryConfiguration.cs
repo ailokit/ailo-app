@@ -7,49 +7,18 @@ namespace Ailo.Services;
 public sealed class DataDirectoryConfiguration
 {
     private readonly string _configurationPath;
-    private readonly IReadOnlyList<string> _legacyConfigurationPaths;
-
-    public DataDirectoryConfiguration(string configurationPath, params string[] legacyConfigurationPaths)
+    public DataDirectoryConfiguration(string configurationPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(configurationPath);
         _configurationPath = Path.GetFullPath(configurationPath);
-        _legacyConfigurationPaths = legacyConfigurationPaths
-            .Where(path => !string.IsNullOrWhiteSpace(path))
-            .Select(Path.GetFullPath)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
     }
 
     public static DataDirectoryConfiguration CreateDefault() =>
-        new(
-            AppPaths.GetDataDirectoryConfigurationPath(),
-            AppPaths.GetLegacyDataDirectoryConfigurationPath("Chater-dev"),
-            AppPaths.GetLegacyDataDirectoryConfigurationPath("Chater"));
-
-    internal string? MigrateLegacyConfiguration()
-    {
-        var configuredDirectory = TryRead(_configurationPath);
-        if (configuredDirectory is not null)
-        {
-            return configuredDirectory;
-        }
-
-        var legacyDirectory = _legacyConfigurationPaths
-            .Select(TryRead)
-            .FirstOrDefault(directory => directory is not null);
-        if (legacyDirectory is not null)
-        {
-            SaveDataDirectory(legacyDirectory);
-        }
-
-        return legacyDirectory;
-    }
+        new(AppPaths.GetDataDirectoryConfigurationPath());
 
     public string? GetDataDirectory()
     {
-        return TryRead(_configurationPath) ?? _legacyConfigurationPaths
-            .Select(TryRead)
-            .FirstOrDefault(directory => directory is not null);
+        return TryRead(_configurationPath);
     }
 
     private static string? TryRead(string path)
