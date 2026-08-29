@@ -68,7 +68,7 @@
                 <Button Classes="model-selector-button" HorizontalAlignment="Left" Padding="0" Margin="0"
                         Height="32" VerticalContentAlignment="Stretch" DockPanel.Dock="Left">
                     <Button.Content>
-                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                        <Border BorderBrush="{DynamicResource InputControlBorderBrush}"
                                 BorderThickness="1" Padding="8,2" CornerRadius="{DynamicResource CornerRadiusInput}">
                             <StackPanel Spacing="0">
                                 <TextBlock Text="{Binding SelectedProviderDisplayName}" FontSize="12"

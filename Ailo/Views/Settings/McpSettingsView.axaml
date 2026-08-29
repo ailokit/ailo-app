@@ -14,7 +14,7 @@
                 <TextBlock Text="{Binding Localization[McpSettings]}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"/>
             </DockPanel>
             <ListBox Grid.Row="1" ItemsSource="{Binding Servers}" SelectedItem="{Binding SelectedServer}"
-                     Background="Transparent" BorderThickness="1" CornerRadius="{DynamicResource CornerRadiusCompact}">
+                     Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource InputControlBorderBrush}" CornerRadius="{DynamicResource CornerRadiusCompact}">
                 <ListBox.Styles>
                     <Style Selector="ListBoxItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>

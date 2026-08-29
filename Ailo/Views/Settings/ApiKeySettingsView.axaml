@@ -16,6 +16,7 @@
                     Background="Transparent"
                     SelectedItem="{Binding SelectedProvider}"
                     BorderThickness="1"
+                    BorderBrush="{DynamicResource InputControlBorderBrush}"
                     CornerRadius="{DynamicResource CornerRadiusCompact}"
                     Margin="0">
                     <ListBox.ItemTemplate>

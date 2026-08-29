@@ -46,7 +46,7 @@
                         <picker:ColorPicker.Content>
                             <Border Width="30" Height="30" CornerRadius="{DynamicResource CornerRadiusRound}"
                                     Background="{Binding AccentBrush}"
-                                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                    BorderBrush="{DynamicResource InputControlBorderBrush}"
                                     BorderThickness="1"
                                     Margin="8,0,0,0"/>
                         </picker:ColorPicker.Content>
@@ -65,7 +65,7 @@
                                         ToolTip.Tip="{Binding DisplayName}">
                                     <Border Width="30" Height="30" CornerRadius="{DynamicResource CornerRadiusRound}"
                                             Background="{Binding Brush}"
-                                            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                            BorderBrush="{DynamicResource InputControlBorderBrush}"
                                             BorderThickness="1"/>
                                 </Button>
                             </DataTemplate>

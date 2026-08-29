@@ -19,6 +19,7 @@
                      SelectedItem="{Binding SelectedSkill}"
                      Background="Transparent"
                      BorderThickness="1"
+                     BorderBrush="{DynamicResource InputControlBorderBrush}"
                      CornerRadius="{DynamicResource CornerRadiusCompact}"
                      DragDrop.DragOver="OnSkillDragOver"
                      DragDrop.Drop="OnSkillDrop">

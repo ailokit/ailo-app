@@ -13,7 +13,7 @@
         KeyDown="OnKeyDown">
     <Grid RowDefinitions="Auto,*">
         <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderBrush="{DynamicResource ControlBorderBrush}"
                 BorderThickness="0,0,0,1" Padding="8,6">
             <DockPanel LastChildFill="False">
                 <TextBlock x:Name="ZoomLabel" VerticalAlignment="Center" Opacity="0.75" />
