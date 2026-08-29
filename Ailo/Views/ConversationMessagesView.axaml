@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ailo.ViewModels"
+             xmlns:local="using:Ailo.Views"
+             xmlns:conversations="clr-namespace:Ailo.AI.Conversations"
+             x:Class="Ailo.Views.ConversationMessagesView"
+             Loaded="OnLoaded">
+    <ScrollViewer x:Name="MessagesScrollViewer" ScrollChanged="OnMessagesScrollChanged">
+        <ItemsControl ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=local:ConversationMessagesView}}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ChatMessageViewModel">
+                    <Grid>
+                        <Border Classes="chat-bubble chat-bubble-user"
+                                IsVisible="{Binding IsUser}"
+                                HorizontalAlignment="Right"
+                                Margin="48,0,0,10" Padding="12,9"
+                                MaxWidth="720">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Click="OnCopySelectedText"/>
+                                    <MenuItem Click="OnCopyMarkdown"/>
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <StackPanel>
+                                <ItemsControl ItemsSource="{Binding Attachments}"
+                                              IsVisible="{Binding HasAttachments}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="conversations:MessageAttachment">
+                                            <Border CornerRadius="{DynamicResource CornerRadiusSmall}" Margin="0,0,6,0"
+                                                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                                                <Button Classes="transparent-button" Padding="0" Click="OnOpenMessageImage"
+                                                        ToolTip.Tip="{Binding $parent[local:ConversationMessagesView].Localization[ViewImage]}"
+                                                        AutomationProperties.Name="{Binding $parent[local:ConversationMessagesView].Localization[ViewImage]}">
+                                                    <Image Source="{Binding FilePath, Converter={x:Static local:ImagePathToBitmapConverter.Instance}}"
+                                                           Width="96" Height="96" Stretch="UniformToFill"/>
+                                                </Button>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <local:MarkdownView Markdown="{Binding Content}"/>
+                            </StackPanel>
+                        </Border>
+                        <StackPanel IsVisible="{Binding IsAssistant}"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,48,10" MaxWidth="720"
+                                    Spacing="4">
+                            <Border Classes="chat-bubble chat-bubble-assistant" Padding="12,9">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Click="OnCopySelectedText"/>
+                                        <MenuItem Click="OnCopyMarkdown"/>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                                <local:MarkdownView Markdown="{Binding Content}"
+                                                     ThinkingStatus="{Binding ThinkingStatus}"
+                                                     ThinkingHeader="{Binding $parent[local:ConversationMessagesView].Localization[Thinking]}"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

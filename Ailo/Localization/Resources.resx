@@ -1,0 +1,586 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0</value>
+    </resheader>
+    <data name="AppTitle">
+        <value>Ailo</value>
+    </data>
+    <data name="AppSlogan">
+        <value>Ailo — One Call, Intelligence Arrives.</value>
+    </data>
+    <data name="Settings">
+        <value>Settings</value>
+    </data>
+    <data name="AlwaysOnTop">
+        <value>Always on top</value>
+    </data>
+    <data name="GeneralSettings">
+        <value>General</value>
+    </data>
+    <data name="ApiKey">
+        <value>API Key</value>
+    </data>
+    <data name="Skills">
+        <value>Prompts</value>
+    </data>
+    <data name="Tools">
+        <value>Tools</value>
+    </data>
+    <data name="ToolSettings">
+        <value>Tool settings</value>
+    </data>
+    <data name="ToolSettingsDescription">
+        <value>Choose which tools models can use in chat.</value>
+    </data>
+    <data name="ToolCategoryWeb"><value>Web</value></data>
+    <data name="ToolCategoryWorkspace"><value>Workspace</value></data>
+    <data name="ToolCategoryScheduledJobs"><value>Scheduled jobs</value></data>
+    <data name="ToolCategorySystem"><value>System</value></data>
+    <data name="ToolCategoryOther"><value>Other</value></data>
+    <data name="ToolSettingsSaved">
+        <value>Changes are saved automatically.</value>
+    </data>
+    <data name="ShellToolConfiguration">
+        <value>Shell execution</value>
+    </data>
+    <data name="ShellToolConfigurationDescription">
+        <value>Choose which shell backend the agent uses when a workspace folder is selected.</value>
+    </data>
+    <data name="ShellToolRequiresWorkspace">
+        <value>Shell execution is disabled until you select a workspace folder in the chat window.</value>
+    </data>
+    <data name="ShellToolLocal">
+        <value>LocalShellTool</value>
+    </data>
+    <data name="ShellToolLocalDescription">
+        <value>Runs commands on this computer, confined to the selected workspace folder.</value>
+    </data>
+    <data name="ShellToolDocker">
+        <value>DockerShellTool</value>
+    </data>
+    <data name="ShellToolDockerDescription">
+        <value>Runs commands inside an OCI container with the selected workspace folder mounted.</value>
+    </data>
+    <data name="ShellToolDockerUnavailable">
+        <value>Docker/Podman OCI container runtime is unavailable.</value>
+    </data>
+    <data name="ToolFetchWebpage">
+        <value>Fetch webpage content</value>
+    </data>
+    <data name="ToolFetchWebpageDescription">
+        <value>Read and extract text from a public webpage.</value>
+    </data>
+    <data name="ToolOpenWebpage">
+        <value>Open webpage in browser</value>
+    </data>
+    <data name="ToolOpenWebpageDescription">
+        <value>Open an http/https webpage or authorized local HTML file in the system default browser.</value>
+    </data>
+    <data name="ToolGetWorkspaceEntries">
+        <value>Get workspace entries</value>
+    </data>
+    <data name="ToolGetWorkspaceEntriesDescription">
+        <value>List files and folders explicitly selected for this chat.</value>
+    </data>
+    <data name="ToolReadWorkspaceFile">
+        <value>Read workspace file</value>
+    </data>
+    <data name="ToolReadWorkspaceFileDescription">
+        <value>Read a UTF-8 text file inside the selected workspace.</value>
+    </data>
+    <data name="ToolWriteWorkspaceFile">
+        <value>Write workspace file</value>
+    </data>
+    <data name="ToolWriteWorkspaceFileDescription">
+        <value>Create or update a text file inside the selected workspace.</value>
+    </data>
+    <data name="ToolCreateWorkspaceDirectory">
+        <value>Create workspace folder</value>
+    </data>
+    <data name="ToolCreateWorkspaceDirectoryDescription">
+        <value>Create a directory inside a selected workspace folder.</value>
+    </data>
+    <data name="ToolListWorkspaceDirectory">
+        <value>List workspace directory</value>
+    </data>
+    <data name="ToolListWorkspaceDirectoryDescription">
+        <value>List files and folders inside a selected workspace directory.</value>
+    </data>
+    <data name="ToolScheduleNotification">
+        <value>Schedule notification</value>
+    </data>
+    <data name="ToolScheduleNotificationDescription">
+        <value>Create a persistent recurring desktop notification with a cron expression.</value>
+    </data>
+    <data name="ToolShowNotification">
+        <value>Send notification</value>
+    </data>
+    <data name="ToolShowNotificationDescription">
+        <value>Send an immediate native notification or a topmost notification window with a Markdown body.</value>
+    </data>
+    <data name="ToolGetSystemInformation">
+        <value>Get system information</value>
+    </data>
+    <data name="ToolGetSystemInformationDescription">
+        <value>Get the current time, operating-system details, or current system user.</value>
+    </data>
+    <data name="ToolScheduleAgentJob">
+        <value>Schedule agent job</value>
+    </data>
+    <data name="ToolScheduleAgentJobDescription">
+        <value>Create a recurring agent task with a Docker-confined working directory.</value>
+    </data>
+    <data name="ToolListScheduledJobs"><value>List scheduled jobs</value></data>
+    <data name="ToolListScheduledJobsDescription"><value>View all persistent recurring jobs and their schedules.</value></data>
+    <data name="ToolUpdateScheduledJob"><value>Update scheduled job</value></data>
+    <data name="ToolUpdateScheduledJobDescription"><value>Modify a persistent recurring job's schedule, parameters, or enabled state.</value></data>
+    <data name="ToolDeleteScheduledJob"><value>Delete scheduled job</value></data>
+    <data name="ToolDeleteScheduledJobDescription"><value>Permanently delete a persistent recurring job.</value></data>
+    <data name="Shortcut">
+        <value>Shortcuts</value>
+    </data>
+    <data name="NewConversation">
+        <value>New chat</value>
+    </data>
+    <data name="HistoryPlaceholder">
+        <value>Select conversation</value>
+    </data>
+    <data name="History">
+        <value>History</value>
+    </data>
+    <data name="Jobs"><value>Scheduled jobs</value></data>
+    <data name="JobsSettings"><value>Scheduled job management</value></data>
+    <data name="JobDetails"><value>Job details</value></data>
+    <data name="JobId"><value>Job ID</value></data>
+    <data name="JobType"><value>Job type</value></data>
+    <data name="CronExpression"><value>Cron expression</value></data>
+    <data name="JobParameters"><value>Parameters (JSON)</value></data>
+    <data name="JobEnabled"><value>Enabled</value></data>
+    <data name="LastRunAt"><value>Last run</value></data>
+    <data name="NextRunAt"><value>Next run</value></data>
+    <data name="JobCronRequired"><value>A Cron expression is required.</value></data>
+    <data name="JobParametersRequired"><value>JSON parameters are required.</value></data>
+    <data name="JobSaved"><value>Scheduled job saved.</value></data>
+    <data name="JobDeleted"><value>Scheduled job deleted.</value></data>
+    <data name="StartConversation">
+        <value>Start conversation</value>
+    </data>
+    <data name="SkillPlaceholder">
+        <value>Select prompt</value>
+    </data>
+    <data name="ModelPlaceholder">
+        <value>Select model</value>
+    </data>
+    <data name="InputPlaceholder">
+        <value>Type a message, press Enter to send…</value>
+    </data>
+    <data name="Send">
+        <value>Send</value>
+    </data>
+    <data name="Stop">
+        <value>Stop</value>
+    </data>
+    <data name="Theme">
+        <value>Theme</value>
+    </data>
+    <data name="ThemeDescriptionShort">
+        <value>Follow system, light, or dark mode.</value>
+    </data>
+    <data name="Language">
+        <value>Language</value>
+    </data>
+    <data name="LanguageDescription">
+        <value>Choose the interface language. Changes apply and save immediately.</value>
+    </data>
+    <data name="Startup">
+        <value>Launch at startup</value>
+    </data>
+    <data name="StartupDescription">
+        <value>Start Ailo automatically when you sign in.</value>
+    </data>
+    <data name="DataDirectory">
+        <value>Data directory</value>
+    </data>
+    <data name="DataDirectoryDescription">
+        <value>Stores your conversations, providers, prompts, attachments, exports, and logs. Changes apply after restart.</value>
+    </data>
+    <data name="DataDirectoryPlaceholder">
+        <value>Select a folder for Ailo data</value>
+    </data>
+    <data name="Browse">
+        <value>Browse…</value>
+    </data>
+    <data name="MigrateData">
+        <value>Migrate current data</value>
+    </data>
+    <data name="MigrateDataDescription">
+        <value>Copy all current data to the new directory and overwrite files already there. The original data is kept.</value>
+    </data>
+    <data name="ApplyDataDirectory">
+        <value>Apply data directory</value>
+    </data>
+    <data name="SelectDataDirectory">
+        <value>Select data directory</value>
+    </data>
+    <data name="DataDirectoryUpdatedRestartRequired">
+        <value>Data directory updated. Restart Ailo to use it.</value>
+    </data>
+    <data name="System">
+        <value>System</value>
+    </data>
+    <data name="Light">
+        <value>Light</value>
+    </data>
+    <data name="Dark">
+        <value>Dark</value>
+    </data>
+    <data name="ApiKeyManagement">
+        <value>API Key management</value>
+    </data>
+    <data name="AddProvider">
+        <value>Add provider</value>
+    </data>
+    <data name="ProviderTypeLabel">
+        <value>Model Provider</value>
+    </data>
+    <data name="ApiKeyLabel">
+        <value>API Key</value>
+    </data>
+    <data name="EndpointLabel">
+        <value>Endpoint</value>
+    </data>
+    <data name="ModelListLabel">
+        <value>Model List</value>
+    </data>
+    <data name="FetchModels">
+        <value>Fetch models from API</value>
+    </data>
+    <data name="FetchingModels">
+        <value>Fetching model list…</value>
+    </data>
+    <data name="FetchedModelsCount">
+        <value>Fetched {0} model(s). Click to add.</value>
+    </data>
+    <data name="FetchModelsNotSupported">
+        <value>This provider does not support model fetching.</value>
+    </data>
+    <data name="ModelListPlaceholder">
+        <value>Models: one per line, comma, or semicolon separated</value>
+    </data>
+    <data name="EndpointPlaceholder">
+        <value>Endpoint (optional for OpenAI)</value>
+    </data>
+    <data name="ApiKeyPlaceholder">
+        <value>API Key (leave blank to keep existing key)</value>
+    </data>
+    <data name="Save">
+        <value>Save</value>
+    </data>
+    <data name="SkillManagement">
+        <value>Prompt management</value>
+    </data>
+    <data name="CustomSkill">
+        <value>Custom prompt</value>
+    </data>
+    <data name="SkillNamePlaceholder">
+        <value>Prompt name</value>
+    </data>
+    <data name="SkillPromptPlaceholder">
+        <value>System prompt (built-in prompts are read-only)</value>
+    </data>
+    <data name="SaveSkill">
+        <value>Save prompt</value>
+    </data>
+    <data name="ChatShortcut">
+        <value>Chat window shortcut</value>
+    </data>
+    <data name="ShortcutHint">
+        <value>Focus the input and press a key combination. The shortcut works in the chat and settings windows.</value>
+    </data>
+    <data name="ShortcutPlaceholder">
+        <value>Click and press a combination, e.g. Ctrl+Shift+Space</value>
+    </data>
+    <data name="SelectApiKey">
+        <value>Select API key</value>
+    </data>
+    <data name="Ready">
+        <value>Ready.</value>
+    </data>
+    <data name="NoProvider">
+        <value>Add and enable a provider in SQLite first.</value>
+    </data>
+    <data name="NewConversationStatus">
+        <value>A new conversation will be created when you send the first message.</value>
+    </data>
+    <data name="Thinking">
+        <value>Thinking</value>
+    </data>
+    <data name="CallingTools">
+        <value>Calling tools…</value>
+    </data>
+    <data name="Completed">
+        <value>Completed.</value>
+    </data>
+    <data name="Stopped">
+        <value>Generation stopped.</value>
+    </data>
+    <data name="ProviderSaved">
+        <value>Provider saved.</value>
+    </data>
+    <data name="SkillSaved">
+        <value>Prompt saved.</value>
+    </data>
+    <data name="AddingProvider">
+        <value>Enter provider settings and save.</value>
+    </data>
+    <data name="AddingSkill">
+        <value>Enter a custom prompt and save.</value>
+    </data>
+    <data name="SelectProviderFirst">
+        <value>Select an enabled provider first.</value>
+    </data>
+    <data name="Delete">
+        <value>Delete</value>
+    </data>
+    <data name="ProviderDeleted">
+        <value>Provider deleted.</value>
+    </data>
+    <data name="SkillDeleted">
+        <value>Prompt deleted.</value>
+    </data>
+    <data name="ShortcutCleared">
+        <value>Shortcut cleared.</value>
+    </data>
+    <data name="StartupEnabled">
+        <value>Launch at startup enabled.</value>
+    </data>
+    <data name="StartupDisabled">
+        <value>Launch at startup disabled.</value>
+    </data>
+    <data name="StartupPermissionRequired">
+        <value>Permission is required. System startup settings have been opened.</value>
+    </data>
+    <data name="AccentColor">
+        <value>Accent color</value>
+    </data>
+    <data name="AccentColorDescription">
+        <value>Choose a preset or use the color picker to customize Ailo's accent color.</value>
+    </data>
+    <data name="CustomAccentColor">
+        <value>Custom color</value>
+    </data>
+    <data name="About">
+        <value>About</value>
+    </data>
+    <data name="CurrentVersionLabel">
+        <value>Current version</value>
+    </data>
+    <data name="CheckForUpdates">
+        <value>Check for updates</value>
+    </data>
+    <data name="CheckingForUpdates">
+        <value>Checking for updates…</value>
+    </data>
+    <data name="NoUpdates">
+        <value>You are using the latest version.</value>
+    </data>
+    <data name="UpdateAvailable">
+        <value>An update is available.</value>
+    </data>
+    <data name="UpdateReady">
+        <value>Update downloaded. Waiting for confirmation.</value>
+    </data>
+    <data name="UpdateCheckFailed">
+        <value>Update error: {0}</value>
+    </data>
+    <data name="UpdateDownloadTitle">
+        <value>Ailo update available</value>
+    </data>
+    <data name="UpdateDownloadMessage">
+        <value>A new version of Ailo is available. Download it now?</value>
+    </data>
+    <data name="UpdateInstallTitle">
+        <value>Ailo update ready</value>
+    </data>
+    <data name="UpdateInstallMessage">
+        <value>The update package is ready. Start installation now?</value>
+    </data>
+    <data name="UpdateVersionDetails">
+        <value>Current version: {0}&#xA;New version: {1}</value>
+    </data>
+    <data name="ReleaseDetails">
+        <value>Release: {0}</value>
+    </data>
+    <data name="Later">
+        <value>Later</value>
+    </data>
+    <data name="DownloadNow">
+        <value>Download now</value>
+    </data>
+    <data name="UpdateNow">
+        <value>Install now</value>
+    </data>
+    <data name="DownloadingUpdate">
+        <value>Downloading update…</value>
+    </data>
+    <data name="UpdateDownloadFailed">
+        <value>Update failed: {0}</value>
+    </data>
+    <data name="NewChatWindowShortcut">
+        <value>New chat window shortcut</value>
+    </data>
+    <data name="NewChatWindowShortcutHint">
+        <value>Focus the input and press a key combination. This shortcut always opens a new chat window.</value>
+    </data>
+    <data name="HistoryDeleted">
+        <value>Conversation deleted.</value>
+    </data>
+    <data name="Cancel">
+        <value>Cancel</value>
+    </data>
+    <data name="ConfirmDeleteTitle">
+        <value>Confirm deletion</value>
+    </data>
+    <data name="ConfirmDeleteMessage">
+        <value>Delete "{0}"? This action cannot be undone from the app.</value>
+    </data>
+    <data name="CopySelectedText">
+        <value>Copy selected text</value>
+    </data>
+    <data name="CopyMarkdownContent">
+        <value>Copy Markdown message</value>
+    </data>
+    <data name="TrayShowChat">
+        <value>Open Chat</value>
+    </data>
+    <data name="TrayShowSettings">
+        <value>Open Settings</value>
+    </data>
+    <data name="TrayExit">
+        <value>Exit</value>
+    </data>
+    <data name="Multimodal">
+        <value>Multimodal</value>
+    </data>
+    <data name="AddModel">
+        <value>Add model</value>
+    </data>
+    <data name="AddImage">
+        <value>Add image</value>
+    </data>
+    <data name="SelectWorkspace">
+        <value>Select chat workspace</value>
+    </data>
+    <data name="SelectWorkspaceFiles">
+        <value>Select workspace files</value>
+    </data>
+    <data name="SelectWorkspaceFolders">
+        <value>Select workspace folders</value>
+    </data>
+    <data name="RemoveWorkspaceEntry">
+        <value>Remove from workspace</value>
+    </data>
+    <data name="OpenWorkspaceEntry">
+        <value>Open workspace location</value>
+    </data>
+    <data name="RemoveAttachment">
+        <value>Remove</value>
+    </data>
+    <data name="ViewImage">
+        <value>View image</value>
+    </data>
+    <data name="ImagePreviewTitle">
+        <value>Image preview - {0}</value>
+    </data>
+    <data name="ZoomIn">
+        <value>Zoom in</value>
+    </data>
+    <data name="ZoomOut">
+        <value>Zoom out</value>
+    </data>
+    <data name="ActualSize">
+        <value>Actual size</value>
+    </data>
+    <data name="FitToWindow">
+        <value>Fit to window</value>
+    </data>
+    <data name="Close">
+        <value>Close</value>
+    </data>
+    <data name="Mcp">
+        <value>MCP</value>
+    </data>
+    <data name="McpSettings">
+        <value>MCP servers</value>
+    </data>
+    <data name="McpSettingsDescription">
+        <value>Connect local stdio or HTTP MCP servers. Only enabled servers and tools are provided to the model.</value>
+    </data>
+    <data name="NewMcpServer">
+        <value>New MCP server</value>
+    </data>
+    <data name="AddingMcpServer">
+        <value>Adding an MCP server…</value>
+    </data>
+    <data name="McpServerName">
+        <value>Server name</value>
+    </data>
+    <data name="McpServerNameRequired">
+        <value>Enter an MCP server name.</value>
+    </data>
+    <data name="McpTransport">
+        <value>Transport</value>
+    </data>
+    <data name="McpEndpoint">
+        <value>HTTP endpoint</value>
+    </data>
+    <data name="McpCommand">
+        <value>Command</value>
+    </data>
+    <data name="McpArguments">
+        <value>Arguments JSON array</value>
+    </data>
+    <data name="McpEnvironment">
+        <value>Environment JSON object</value>
+    </data>
+    <data name="McpHeaders">
+        <value>HTTP headers JSON object</value>
+    </data>
+    <data name="McpEnabled">
+        <value>Enable this server</value>
+    </data>
+    <data name="McpTools">
+        <value>Tools</value>
+    </data>
+    <data name="RefreshMcpTools">
+        <value>Refresh tools</value>
+    </data>
+    <data name="RefreshingMcpTools">
+        <value>Refreshing tools…</value>
+    </data>
+    <data name="McpToolsRefreshed">
+        <value>Discovered {0} tools.</value>
+    </data>
+    <data name="McpServerSaved">
+        <value>MCP server saved.</value>
+    </data>
+    <data name="McpServerDeleted">
+        <value>MCP server deleted.</value>
+    </data>
+    <data name="McpTypeStdio">
+        <value>Stdio</value>
+    </data>
+    <data name="McpTypeStreamableHttp">
+        <value>Streamable HTTP</value>
+    </data>
+</root>

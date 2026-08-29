@@ -1,0 +1,377 @@
+name: test-and-release
+
+on:
+  pull_request:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore Ailo.slnx
+      - run: dotnet build Ailo.slnx --configuration Release --no-restore
+      - run: dotnet test Ailo.slnx --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: "**/TestResults/*.trx"
+
+  sync-version:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - name: Sync project version from tag
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          version_file="Ailo/Ailo.csproj"
+          tag_version="${GITHUB_REF_NAME#v}"
+
+          if [[ ! "$tag_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release version: $tag_version"
+            exit 1
+          fi
+
+          sed -E -i "s#(<Version>)[^<]*(</Version>)#\\1${tag_version}\\2#" "$version_file"
+          if ! grep -q "<Version>${tag_version}</Version>" "$version_file"; then
+            echo "Could not update the project version in $version_file"
+            exit 1
+          fi
+
+          if git diff --quiet -- "$version_file"; then
+            echo "Project version is already ${tag_version}."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$version_file"
+          git commit -m "chore: sync project version to v${tag_version}"
+          git push origin "HEAD:${DEFAULT_BRANCH}"
+
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [test, sync-version]
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: windows-11-arm
+            rid: win-arm64
+          - os: macos-15
+            rid: osx-arm64
+          - os: macos-15-intel
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+      MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+      - name: Validate version tag
+        id: version
+        shell: bash
+        run: |
+          TAG_NAME="$GITHUB_REF_NAME"
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $TAG_NAME. Expected vX.Y.Z."
+            exit 1
+          fi
+          echo "version=${TAG_NAME#v}" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore Ailo/Ailo.csproj --runtime ${{ matrix.rid }} --property:Configuration=Release -p:SelfContained=true -p:PublishAot=true -p:PublishTrimmed=true
+      - run: dotnet publish Ailo/Ailo.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained true --no-restore --output artifacts/${{ matrix.rid }}/publish -p:Version=${{ steps.version.outputs.version }} -p:PublishAot=true -p:PublishTrimmed=true -p:DebugSymbols=false -p:DebugType=None -p:StripSymbols=true
+      - name: Create macOS application bundle
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          publish_dir="artifacts/${{ matrix.rid }}/publish"
+          app_dir="artifacts/${{ matrix.rid }}/Ailo.app"
+          mkdir -p "$app_dir/Contents/MacOS"
+          mkdir -p "$app_dir/Contents/Resources"
+          cp -R "$publish_dir"/. "$app_dir/Contents/MacOS/"
+          cp "$GITHUB_WORKSPACE/Ailo/Assets/Ailo.icns" "$app_dir/Contents/Resources/Ailo.icns"
+          cat > "$app_dir/Contents/Info.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleDisplayName</key>
+              <string>Ailo</string>
+              <key>CFBundleExecutable</key>
+              <string>Ailo</string>
+              <key>CFBundleIconFile</key>
+              <string>Ailo.icns</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.ailo.app</string>
+              <key>CFBundleName</key>
+              <string>Ailo</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>${APP_VERSION}</string>
+              <key>CFBundleVersion</key>
+              <string>${APP_VERSION}</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          chmod +x "$app_dir/Contents/MacOS/Ailo"
+          rm -rf "$publish_dir"
+      - name: Validate macOS code-signing configuration
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          for variable in MACOS_CERTIFICATE_BASE64 MACOS_CERTIFICATE_PASSWORD; do
+            if [[ -z "${!variable:-}" ]]; then
+              missing+=("$variable")
+            fi
+          done
+
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::macOS releases must be signed so privacy permissions survive app updates. Missing secrets: ${missing[*]}"
+            exit 1
+          fi
+      - name: Import macOS code-signing certificate
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          certificate_path="$RUNNER_TEMP/ailo-signing-certificate.p12"
+          keychain_path="$RUNNER_TEMP/ailo-signing.keychain-db"
+          echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode > "$certificate_path"
+          security create-keychain -p "$MACOS_CERTIFICATE_PASSWORD" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$MACOS_CERTIFICATE_PASSWORD" "$keychain_path"
+          security import "$certificate_path" -k "$keychain_path" -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security list-keychain -d user -s "$keychain_path"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_CERTIFICATE_PASSWORD" "$keychain_path"
+
+          # Do not add the self-signed root to the runner's trust settings: that
+          # operation can request interactive authorization and hang hosted CI.
+          # codesign can sign with an untrusted self-signed identity when it is
+          # addressed by the certificate fingerprint rather than its name.
+          identity_output="$(security find-identity -p codesigning "$keychain_path")"
+          echo "$identity_output"
+          identity_count="$(awk '$2 ~ /^[0-9A-Fa-f]+$/ && length($2) == 40 { count++ } END { print count + 0 }' <<< "$identity_output")"
+          if [[ "$identity_count" -ne 1 ]]; then
+            echo "::error::Expected exactly one code-signing identity in the imported certificate, found $identity_count."
+            exit 1
+          fi
+          signing_identity="$(awk '$2 ~ /^[0-9A-Fa-f]+$/ && length($2) == 40 { print $2; exit }' <<< "$identity_output")"
+          echo "MACOS_RESOLVED_SIGNING_IDENTITY=$signing_identity" >> "$GITHUB_ENV"
+      - name: Sign macOS application bundle
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_dir="artifacts/${{ matrix.rid }}/Ailo.app"
+          designated_requirement="=designated => identifier \"com.ailo.app\" and anchor = H\"${MACOS_RESOLVED_SIGNING_IDENTITY}\""
+          # Self-signed certificates cannot use Apple's secure timestamp service.
+          # Supply the designated requirement explicitly so every release uses
+          # the same application identifier and self-signed certificate anchor.
+          # Sign nested Mach-O files first. Using codesign --deep for signing can
+          # rewrite them after the outer bundle's resource seal has been created.
+          while IFS= read -r -d '' nested_file; do
+            if [[ "$nested_file" == "$app_dir/Contents/MacOS/Ailo" ]]; then
+              continue
+            fi
+            # macOS codesign treats .NET DLLs inside Contents/MacOS as generic
+            # nested code even though they are not Mach-O binaries.
+            if [[ "$nested_file" == *.dylib || "$nested_file" == *.so || "$nested_file" == *.dll ]] || \
+               file -b "$nested_file" | grep -q 'Mach-O'; then
+              echo "Signing nested code: $nested_file"
+              codesign \
+                --force \
+                --options runtime \
+                --sign "$MACOS_RESOLVED_SIGNING_IDENTITY" \
+                "$nested_file"
+            fi
+          done < <(find "$app_dir/Contents" -type f -print0)
+
+          # Sign the outer bundle last so its resource seal records the final
+          # bytes of every nested library and resource file.
+          codesign \
+            --force \
+            --options runtime \
+            --requirements "$designated_requirement" \
+            --sign "$MACOS_RESOLVED_SIGNING_IDENTITY" \
+            "$app_dir"
+          signature_info="$(codesign -dvvv -r- "$app_dir" 2>&1)"
+          echo "$signature_info"
+
+          if grep -q '^Signature=adhoc$' <<< "$signature_info"; then
+            echo "::error::Refusing to publish an ad-hoc signed macOS application."
+            exit 1
+          fi
+          if ! grep -q '^Identifier=com\.ailo\.app$' <<< "$signature_info"; then
+            echo "::error::The signed application identifier is not com.ailo.app."
+            exit 1
+          fi
+          if grep -q '^designated => cdhash ' <<< "$signature_info"; then
+            echo "::error::The application still has a version-specific ad-hoc designated requirement."
+            exit 1
+          fi
+          if ! grep -Fq "identifier \"com.ailo.app\"" <<< "$signature_info" || \
+             ! grep -Eqi "(anchor( =)?|certificate root =) H\"${MACOS_RESOLVED_SIGNING_IDENTITY}\"" <<< "$signature_info"; then
+            echo "::error::The application does not have the expected stable self-signed designated requirement."
+            exit 1
+          fi
+
+          codesign --verify --deep --strict --verbose=4 "$app_dir"
+      - name: Package macOS application
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        run: ditto -c -k --sequesterRsrc --keepParent "artifacts/${{ matrix.rid }}/Ailo.app" "artifacts/ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}.zip"
+      - name: Create macOS disk image
+        if: startsWith(matrix.rid, 'osx-')
+        shell: bash
+        run: |
+          staging_dir="$(mktemp -d "${RUNNER_TEMP}/ailo-dmg.XXXXXX")"
+          cp -R "artifacts/${{ matrix.rid }}/Ailo.app" "$staging_dir/Ailo.app"
+          ln -s "/Applications" "$staging_dir/Applications"
+          hdiutil create \
+            -volname "Ailo" \
+            -srcfolder "$staging_dir" \
+            -ov \
+            -format UDZO \
+            "artifacts/ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}.dmg"
+      - name: Install Inno Setup
+        if: startsWith(matrix.rid, 'win-')
+        shell: pwsh
+        run: |
+          if (-not (Get-Command iscc.exe -ErrorAction SilentlyContinue) -and
+              -not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe") -and
+              -not (Test-Path "$env:ProgramFiles\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --no-progress --yes
+          }
+      - name: Package Windows application
+        if: startsWith(matrix.rid, 'win-')
+        shell: pwsh
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $publishDir = Join-Path $env:GITHUB_WORKSPACE "artifacts\${{ matrix.rid }}\publish"
+          $artifactDir = Join-Path $env:GITHUB_WORKSPACE "artifacts\${{ matrix.rid }}"
+          $portableZip = Join-Path $env:GITHUB_WORKSPACE "artifacts\ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}.zip"
+          $appExecutable = Join-Path $publishDir "Ailo.exe"
+          $issPath = Join-Path $env:GITHUB_WORKSPACE "Ailo\Installer\Ailo.iss"
+          $setupIcon = Join-Path $env:GITHUB_WORKSPACE "Ailo\Assets\ailo.ico"
+
+          if (-not (Test-Path $appExecutable)) {
+            Get-ChildItem -Path $publishDir -Force | Format-Table Name, Length, Mode
+            throw "Native AOT executable was not found: $appExecutable"
+          }
+          if (-not (Test-Path $issPath)) {
+            throw "Inno Setup configuration was not found: $issPath"
+          }
+          if (-not (Test-Path $setupIcon)) {
+            throw "Windows application icon was not found: $setupIcon"
+          }
+
+          Compress-Archive -Path (Join-Path $publishDir '*') -DestinationPath $portableZip -Force
+
+          $iscc = @(
+            (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source,
+            (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
+            (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe")
+          ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+          if (-not (Test-Path $iscc)) {
+            throw "Inno Setup compiler was not found."
+          }
+
+          & $iscc `
+            "/DAppVersion=$env:APP_VERSION" `
+            "/DSourceDir=$publishDir" `
+            "/DOutputDir=$artifactDir" `
+            "/DOutputBaseName=ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}-setup" `
+            "/DSetupIcon=$setupIcon" `
+            $issPath
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup failed with exit code $LASTEXITCODE."
+          }
+      - name: Upload Windows packages
+        if: startsWith(matrix.rid, 'win-')
+        uses: actions/upload-artifact@v6
+        with:
+          name: ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}
+          path: |
+            artifacts/ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}.zip
+          if-no-files-found: error
+      - name: Upload Windows setup packages
+        if: startsWith(matrix.rid, 'win-')
+        uses: actions/upload-artifact@v6
+        with:
+          name: ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}-setup
+          path: |
+            artifacts/${{ matrix.rid }}/ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}-setup.exe
+          if-no-files-found: error
+      - name: Upload macOS packages
+        if: startsWith(matrix.rid, 'osx-')
+        uses: actions/upload-artifact@v6
+        with:
+          name: ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}
+          path: |
+            artifacts/ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}.zip
+            artifacts/ailo-${{ matrix.rid }}-${{ steps.version.outputs.tag }}.dmg
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: ailo-*
+          path: release-assets
+          merge-multiple: true
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: gh release create "$TAG_NAME" release-assets/* --repo "$GITHUB_REPOSITORY" --title "Ailo $TAG_NAME" --generate-notes

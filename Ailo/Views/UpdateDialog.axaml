@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ailo.Views.UpdateDialog"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Icon="/Assets/ailo.ico">
+    <StackPanel Grid.Row="1" Margin="24" Spacing="14">
+        <TextBlock x:Name="MessageText" FontSize="18" FontWeight="Bold"/>
+        <TextBlock x:Name="VersionText" TextWrapping="Wrap"/>
+        <TextBlock x:Name="ReleaseText" TextWrapping="Wrap"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button x:Name="LaterButton" Click="OnLaterClick" Padding="12,7"/>
+            <Button x:Name="UpdateButton" Classes="primary-button" Click="OnUpdateClick" Padding="12,7"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

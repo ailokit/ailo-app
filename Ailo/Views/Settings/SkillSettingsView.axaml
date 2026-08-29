@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ailo.ViewModels"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="Ailo.Views.Settings.SkillSettingsView"
+             x:DataType="vm:SkillSettingsViewModel">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
+        <Grid ColumnDefinitions="*,Auto">
+            <StackPanel>
+                <TextBlock Text="{Binding Localization[SkillManagement]}" FontSize="22" FontWeight="Bold"/>
+            </StackPanel>
+            <Button Classes="primary-button" Grid.Column="1" Command="{Binding AddSkillCommand}" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8"><materialIcons:MaterialIcon Kind="Plus" Width="18" Height="18"/><TextBlock Text="{Binding Localization[CustomSkill]}"/></StackPanel>
+            </Button>
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="230,*" ColumnSpacing="16">
+            <ListBox x:Name="SkillList"
+                     ItemsSource="{Binding Skills}"
+                     SelectedItem="{Binding SelectedSkill}"
+                     Background="Transparent"
+                     BorderThickness="1"
+                     CornerRadius="{DynamicResource CornerRadiusCompact}"
+                     DragDrop.DragOver="OnSkillDragOver"
+                     DragDrop.Drop="OnSkillDrop">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="4" MinHeight="52" HorizontalAlignment="Stretch" Background="Transparent">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Description}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Border Classes="card" Grid.Column="1" Padding="14">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                    <TextBox Text="{Binding SkillName}" PlaceholderText="{Binding Localization[SkillNamePlaceholder]}"/>
+                    <TextBox Grid.Row="1" Text="{Binding SkillPrompt}" AcceptsReturn="True" TextWrapping="Wrap" PlaceholderText="{Binding Localization[SkillPromptPlaceholder]}"/>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button Classes="primary-button" Command="{Binding SaveSkillCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8"><materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="18" Height="18"/><TextBlock Text="{Binding Localization[SaveSkill]}"/></StackPanel>
+                        </Button>
+                        <Button Classes="primary-button"
+                                Command="{Binding DeleteSkillCommand}"
+                                CommandParameter="{Binding SelectedSkill}"
+                                ToolTip.Tip="{Binding Localization[Delete]}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="Delete" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[Delete]}"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+        <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+        <Canvas x:Name="DragOverlay" Grid.RowSpan="3" IsHitTestVisible="False" Panel.ZIndex="100">
+            <Border x:Name="DragPreview"
+                    IsVisible="False"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    BorderBrush="{DynamicResource SystemControlHighlightAltAccentBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource CornerRadiusCompact}"
+                    Padding="10,7"
+                    MaxWidth="220"
+                    Opacity="0.96">
+                <StackPanel Spacing="2">
+                    <TextBlock x:Name="DragPreviewName" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="DragPreviewDescription"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               MaxLines="2"
+                               Opacity="0.75"/>
+                </StackPanel>
+            </Border>
+        </Canvas>
+    </Grid>
+</UserControl>

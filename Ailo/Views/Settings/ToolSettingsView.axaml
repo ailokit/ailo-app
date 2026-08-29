@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ailo.ViewModels"
+             x:Class="Ailo.Views.Settings.ToolSettingsView"
+             x:DataType="vm:ToolSettingsViewModel">
+    <DockPanel LastChildFill="True">
+        <TextBlock DockPanel.Dock="Bottom" Text="{Binding Localization[ToolSettingsSaved]}" Opacity="0.7"/>
+
+        <ScrollViewer>
+            <StackPanel Spacing="8">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Localization[ToolSettings]}" FontSize="22" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Localization[ToolSettingsDescription]}" Opacity="0.7"/>
+                </StackPanel>
+
+                <Border Classes="card" Padding="10"
+                        ToolTip.Tip="{Binding Localization[ShellToolConfigurationDescription]}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <CheckBox IsChecked="{Binding IsShellToolEnabled, Mode=TwoWay}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Localization[ShellToolConfiguration]}"
+                                   VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <ComboBox Grid.Column="2" Width="190" VerticalAlignment="Center"
+                                  IsEnabled="{Binding IsShellToolEnabled}"
+                                  ItemsSource="{Binding ShellToolOptions}"
+                                  SelectedItem="{Binding SelectedShellToolOption, Mode=TwoWay}">
+                            <ComboBox.ItemContainerTheme>
+                                <ControlTheme TargetType="ComboBoxItem"
+                                              BasedOn="{StaticResource {x:Type ComboBoxItem}}"
+                                              x:DataType="vm:ShellToolOption">
+                                    <Setter Property="IsEnabled" Value="{Binding IsAvailable}"/>
+                                    <Setter Property="ToolTip.Tip" Value="{Binding AvailabilityDescription}"/>
+                                    <Setter Property="ToolTip.ShowOnDisabled" Value="True"/>
+                                </ControlTheme>
+                            </ComboBox.ItemContainerTheme>
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
+                <Border Classes="card" Padding="8">
+                    <TreeView ItemsSource="{Binding ToolCategories}">
+                        <TreeView.Styles>
+                            <Style Selector="TreeViewItem">
+                                <Setter Property="IsExpanded" Value="True"/>
+                            </Style>
+                        </TreeView.Styles>
+                        <TreeView.DataTemplates>
+                            <TreeDataTemplate DataType="vm:ToolCategory" ItemsSource="{Binding Tools}">
+                                <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                          IsThreeState="True" FontWeight="SemiBold"/>
+                            </TreeDataTemplate>
+                            <DataTemplate DataType="vm:ToolAvailability">
+                                <Border Padding="4" Margin="0,1" ToolTip.Tip="{Binding Description}">
+                                    <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsEnabled, Mode=TwoWay}"/>
+                                </Border>
+                            </DataTemplate>
+                        </TreeView.DataTemplates>
+                    </TreeView>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

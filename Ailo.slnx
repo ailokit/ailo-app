@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Ailo.Tests/Ailo.Tests.csproj" />
+  <Project Path="Ailo/Ailo.csproj" />
+</Solution>

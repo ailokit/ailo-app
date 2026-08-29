@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ailo.ViewModels"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="Ailo.Views.Settings.AboutSettingsView"
+             x:DataType="vm:AboutSettingsViewModel">
+    <StackPanel Spacing="16">
+        <TextBlock Text="{Binding Localization[About]}" FontSize="22" FontWeight="Bold"/>
+        <Border Classes="card" Padding="16">
+            <StackPanel Spacing="12">
+                <TextBlock Text="{Binding Localization[AppTitle]}" FontSize="20" FontWeight="Bold"/>
+                <TextBlock Text="{Binding Localization[AppSlogan]}"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Localization[CurrentVersionLabel]}"/>
+                <TextBlock Text="{Binding State.CurrentVersion}" FontSize="16" FontWeight="SemiBold"/>
+                <Button Classes="primary-button"
+                        Command="{Binding State.CheckForUpdatesCommand}"
+                        IsEnabled="{Binding State.CanCheckForUpdates}"
+                        HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="Download" Width="18" Height="18"/>
+                        <TextBlock Text="{Binding Localization[CheckForUpdates]}"/>
+                    </StackPanel>
+                </Button>
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding UpdateProgress}"
+                             IsVisible="{Binding IsDownloadingUpdate}" Height="6"/>
+                <TextBlock Text="{Binding UpdateStatus}"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

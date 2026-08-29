@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ailo.ViewModels"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="Ailo.Views.Settings.ShortcutSettingsView"
+             x:DataType="vm:ShortcutSettingsViewModel">
+    <StackPanel Spacing="16">
+        <TextBlock Text="{Binding Localization[Shortcut]}" FontSize="22" FontWeight="Bold"/>
+        <Border Classes="card delete-action-container" Padding="14">
+            <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Localization[ChatShortcut]}" FontWeight="SemiBold"/>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBox Text="{Binding ChatShortcut, Mode=OneWay}" KeyDown="OnShortcutKeyDown" PlaceholderText="{Binding Localization[ShortcutPlaceholder]}"/>
+                    <Button Classes="primary-button" Grid.Column="1" Command="{Binding ClearShortcutCommand}"
+                            ToolTip.Tip="{Binding Localization[Delete]}" AutomationProperties.Name="{Binding Localization[Delete]}">
+                        <materialIcons:MaterialIcon Kind="Delete" Width="18" Height="18"/>
+                    </Button>
+                </Grid>
+                <TextBlock Text="{Binding Localization[ShortcutHint]}" FontSize="12" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+            </StackPanel>
+        </Border>
+        <Border Classes="card delete-action-container" Padding="14">
+            <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Localization[NewChatWindowShortcut]}" FontWeight="SemiBold"/>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBox Text="{Binding NewChatWindowShortcut, Mode=OneWay}" KeyDown="OnNewChatWindowShortcutKeyDown" PlaceholderText="{Binding Localization[ShortcutPlaceholder]}"/>
+                    <Button Classes="primary-button" Grid.Column="1" Command="{Binding ClearNewChatWindowShortcutCommand}"
+                            ToolTip.Tip="{Binding Localization[Delete]}" AutomationProperties.Name="{Binding Localization[Delete]}">
+                        <materialIcons:MaterialIcon Kind="Delete" Width="18" Height="18"/>
+                    </Button>
+                </Grid>
+                <TextBlock Text="{Binding Localization[NewChatWindowShortcutHint]}" FontSize="12" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+            </StackPanel>
+        </Border>
+        <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,121 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Ailo.ViewModels"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        x:Class="Ailo.Views.SettingsWindow"
+        x:ClassModifier="internal"
+        x:DataType="vm:SettingsWindowViewModel"
+        Title="{Binding Localization[Settings]}" Width="960" Height="640" MinWidth="760" MinHeight="520"
+        Icon="/Assets/ailo.ico"
+        WindowDecorations="None" ExtendClientAreaToDecorationsHint="True">
+    <Grid x:Name="WindowLayout" RowDefinitions="28,*">
+        <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                WindowDecorationProperties.ElementRole="TitleBar">
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Stretch">
+                <StackPanel x:Name="TitleContent"
+                            Orientation="Horizontal" Spacing="8"
+                            Margin="12,0"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Localization[Settings]}"
+                               FontWeight="SemiBold" VerticalAlignment="Center"
+                               FontSize="14"/>
+                </StackPanel>
+                <StackPanel x:Name="CustomWindowButtons" Grid.Column="1" Orientation="Horizontal">
+                    <Button Classes="window-action-button" WindowDecorationProperties.ElementRole="MinimizeButton" Click="OnMinimizeWindow" ToolTip.Tip="Minimize">
+                        <materialIcons:MaterialIcon Kind="WindowMinimize" Width="16" Height="16"/>
+                    </Button>
+                    <Button Classes="window-action-button" WindowDecorationProperties.ElementRole="MaximizeButton" Click="OnToggleMaximizeWindow" ToolTip.Tip="Maximize">
+                        <materialIcons:MaterialIcon x:Name="MaximizeIcon" Kind="WindowMaximize" Width="16" Height="16"/>
+                    </Button>
+                    <Button Classes="window-action-button close-button" WindowDecorationProperties.ElementRole="CloseButton" Click="OnCloseWindow" ToolTip.Tip="Close">
+                        <materialIcons:MaterialIcon Kind="WindowClose" Width="16" Height="16"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Grid Grid.Row="1" ColumnDefinitions="auto,*">
+            <Border Padding="16">
+                <StackPanel Width="120" Spacing="10">
+                    <TextBlock Text="{Binding Localization[Settings]}" FontSize="20" FontWeight="Bold" Margin="0,0,0,12"/>
+                    <Border Classes="settings-navigation-menu">
+                        <ListBox x:Name="SettingsNavigation" SelectionMode="Single"
+                                 SelectionChanged="OnSettingsSelectionChanged" CornerRadius="{DynamicResource CornerRadiusCompact}">
+                        <ListBoxItem Tag="general" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="Tune" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[GeneralSettings]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="history" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="History" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[History]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="scheduled-jobs" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="CalendarClock" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[Jobs]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="api-key" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="KeyChange" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[ApiKey]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="skills" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="LightbulbOutline" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[Skills]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="tools" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="WrenchOutline" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[Tools]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="mcp" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="Connection" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[Mcp]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="shortcut" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="KeyboardOutline" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[Shortcut]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="about" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="InformationOutline" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[About]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        </ListBox>
+                    </Border>
+                </StackPanel>
+            </Border>
+            <ContentControl x:Name="SettingsContent" Grid.Column="1" Margin="0,24,24,24"/>
+        </Grid>
+        <!-- Native non-client hit targets keep the borderless window resizable. -->
+        <Border Grid.RowSpan="2" Height="6" VerticalAlignment="Top" Background="Transparent"
+                WindowDecorationProperties.ElementRole="ResizeN"/>
+        <Border Grid.RowSpan="2" Height="6" VerticalAlignment="Bottom" Background="Transparent"
+                WindowDecorationProperties.ElementRole="ResizeS"/>
+        <Border Grid.RowSpan="2" Width="6" HorizontalAlignment="Left" Background="Transparent"
+                WindowDecorationProperties.ElementRole="ResizeW"/>
+        <Border Grid.RowSpan="2" Width="6" HorizontalAlignment="Right" Background="Transparent"
+                WindowDecorationProperties.ElementRole="ResizeE"/>
+        <Border Grid.RowSpan="2" Width="10" Height="10" HorizontalAlignment="Left" VerticalAlignment="Top" Background="Transparent"
+                WindowDecorationProperties.ElementRole="ResizeNW"/>
+        <Border Grid.RowSpan="2" Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Top" Background="Transparent"
+                WindowDecorationProperties.ElementRole="ResizeNE"/>
+        <Border Grid.RowSpan="2" Width="10" Height="10" HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="Transparent"
+                WindowDecorationProperties.ElementRole="ResizeSW"/>
+        <Border Grid.RowSpan="2" Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Transparent"
+                WindowDecorationProperties.ElementRole="ResizeSE"/>
+    </Grid>
+</Window>

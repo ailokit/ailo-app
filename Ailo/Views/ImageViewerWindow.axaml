@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:localization="clr-namespace:Ailo.Localization"
+        x:Class="Ailo.Views.ImageViewerWindow"
+        x:ClassModifier="internal"
+        x:DataType="localization:LocalizationService"
+        Icon="/Assets/ailo.ico"
+        Width="900" Height="700" MinWidth="480" MinHeight="360"
+        WindowStartupLocation="CenterOwner"
+        Opened="OnOpened"
+        SizeChanged="OnSizeChanged"
+        KeyDown="OnKeyDown">
+    <Grid RowDefinitions="Auto,*">
+        <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="0,0,0,1" Padding="8,6">
+            <DockPanel LastChildFill="False">
+                <TextBlock x:Name="ZoomLabel" VerticalAlignment="Center" Opacity="0.75" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                    <Button Classes="transparent-button" Padding="6,4" Click="OnZoomOut"
+                            ToolTip.Tip="{Binding [ZoomOut]}" AutomationProperties.Name="{Binding [ZoomOut]}">
+                        <materialIcons:MaterialIcon Kind="Minus" Width="18" Height="18" />
+                    </Button>
+                    <Button Classes="transparent-button" Padding="6,4" Click="OnZoomIn"
+                            ToolTip.Tip="{Binding [ZoomIn]}" AutomationProperties.Name="{Binding [ZoomIn]}">
+                        <materialIcons:MaterialIcon Kind="Plus" Width="18" Height="18" />
+                    </Button>
+                    <Button Classes="transparent-button" Padding="6,4" Click="OnActualSize"
+                            ToolTip.Tip="{Binding [ActualSize]}" AutomationProperties.Name="{Binding [ActualSize]}">
+                        <materialIcons:MaterialIcon Kind="ImageSizeSelectActual" Width="18" Height="18" />
+                    </Button>
+                    <Button Classes="transparent-button" Padding="6,4" Click="OnFitToWindow"
+                            ToolTip.Tip="{Binding [FitToWindow]}" AutomationProperties.Name="{Binding [FitToWindow]}">
+                        <materialIcons:MaterialIcon Kind="FitToScreenOutline" Width="18" Height="18" />
+                    </Button>
+                    <Button Classes="transparent-button" Padding="6,4" Click="OnClose"
+                            ToolTip.Tip="{Binding [Close]}" AutomationProperties.Name="{Binding [Close]}">
+                        <materialIcons:MaterialIcon Kind="Close" Width="18" Height="18" />
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <ScrollViewer x:Name="ImageScrollViewer" Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                      PointerWheelChanged="OnImagePointerWheelChanged"
+                      PointerTouchPadGestureMagnify="OnTouchPadMagnify"
+                      Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+            <Image x:Name="PreviewImage" Stretch="Fill" Pinch="OnPinch" PinchEnded="OnPinchEnded"
+                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Image.GestureRecognizers>
+                    <PinchGestureRecognizer />
+                </Image.GestureRecognizers>
+            </Image>
+        </ScrollViewer>
+    </Grid>
+</Window>

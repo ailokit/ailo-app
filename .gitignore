@@ -1,0 +1,10 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+artifacts/
+TestResults/
+logs/
+.idea
+Ailo.sln.DotSettings.user

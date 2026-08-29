@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ailo.Views.ConfirmationDialog"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Icon="/Assets/ailo.ico">
+    <StackPanel Margin="24" Spacing="16" MinWidth="320">
+        <TextBlock x:Name="MessageText" TextWrapping="Wrap"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button x:Name="CancelButton" Click="OnCancelClick" Padding="12,7"/>
+            <Button x:Name="DeleteButton" Classes="primary-button" Click="OnDeleteClick" Padding="12,7"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

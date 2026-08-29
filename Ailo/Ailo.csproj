@@ -1,0 +1,104 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Version>0.1.27</Version>
+        <RuntimeIdentifiers>win-x64;win-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+        <Nullable>enable</Nullable>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>Assets\ailo.ico</ApplicationIcon>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <IsAotCompatible>true</IsAotCompatible>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <!-- Make local output and metadata visibly distinct from release builds. -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <AssemblyName>Ailo-dev</AssemblyName>
+        <AssemblyTitle>Ailo-dev</AssemblyTitle>
+        <Product>Ailo-dev</Product>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <PublishAot>true</PublishAot>
+        <PublishTrimmed>true</PublishTrimmed>
+        <OptimizationPreference>Size</OptimizationPreference>
+        <DebugSymbols>false</DebugSymbols>
+        <DebugType>None</DebugType>
+        <NativeDebugSymbols>false</NativeDebugSymbols>
+        <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+        <StripSymbols>true</StripSymbols>
+        <IsAotCompatible>true</IsAotCompatible>
+        <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    </PropertyGroup>
+
+    <Target Name="RemovePublishDebugSymbols" AfterTargets="Publish">
+        <ItemGroup>
+            <PublishedDebugFiles Include="$(PublishDir)**/*.pdb" />
+            <PublishedDebugFiles Include="$(PublishDir)**/*.dbg" />
+            <PublishedDebugDirectories Include="$(PublishDir)**/*.dSYM" />
+        </ItemGroup>
+        <Delete Files="@(PublishedDebugFiles)" />
+        <RemoveDir Directories="@(PublishedDebugDirectories)" />
+    </Target>
+
+    <ItemGroup>
+        <!-- Only embed assets that are read by the running UI. The macOS .icns
+             file is copied into the app bundle by the release workflow. -->
+        <AvaloniaResource Include="Assets\ailo.ico" />
+        <AvaloniaResource Include="Assets\ailo-tray.png" />
+        <AvaloniaResource Include="Assets\ailo-tray-light.png" />
+        <EmbeddedResource Include="Data\Migrations\*.sql" />
+        <EmbeddedResource Update="Localization\Resources.resx">
+            <Generator>PublicResXFileCodeGenerator</Generator>
+            <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Remove="Converters\**" />
+        <AvaloniaResource Remove="Converters\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" />
+        <PackageReference Include="Avalonia.Controls.ColorPicker" />
+        <PackageReference Include="Avalonia.Desktop" />
+        <PackageReference Include="Avalonia.Themes.Fluent" />
+        <PackageReference Include="LiveMarkdown.Avalonia" />
+        <PackageReference Include="Markdig" />
+        <PackageReference Include="Material.Icons.Avalonia" />
+        <PackageReference Include="CommunityToolkit.Mvvm" />
+        <PackageReference Include="Cronos" />
+        <PackageReference Include="SharpHook" />
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+        <PackageReference Include="Microsoft.Agents.AI.Harness" />
+        <PackageReference Include="Microsoft.Agents.AI.OpenAI" />
+        <PackageReference Include="Microsoft.Agents.AI.Tools.Shell" />
+        <PackageReference Include="ModelContextProtocol" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+        <PackageReference Include="Microsoft.Extensions.Logging" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+        <PackageReference Include="AvaloniaUI.DiagnosticsSupport" PrivateAssets="All" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AvaloniaXaml Remove="Converters\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Converters\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Remove="Converters\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Converters\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <InternalsVisibleTo Include="Ailo.Tests" />
+    </ItemGroup>
+</Project>

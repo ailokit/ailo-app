@@ -1,0 +1,180 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ailo.ViewModels"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="Ailo.Views.Settings.ApiKeySettingsView"
+             x:DataType="vm:ApiKeySettingsViewModel">
+    <Grid ColumnDefinitions="220,*" ColumnSpacing="10">
+        <!-- Left: Provider List -->
+        <Grid RowDefinitions="Auto,*" Margin="0,0,0,0">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding Localization[ApiKeyManagement]}" FontSize="22" FontWeight="Bold"/>
+            </StackPanel>
+            <ScrollViewer Grid.Row="1" Margin="0,8,0,0">
+                <ListBox
+                    ItemsSource="{Binding Providers}"
+                    Background="Transparent"
+                    SelectedItem="{Binding SelectedProvider}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource CornerRadiusCompact}"
+                    Margin="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Spacing="2" Margin="4">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"/>
+                                <TextBlock Text="{Binding ModelSummary}" FontSize="11"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding ProviderType}" FontSize="10"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Right: Configuration Form -->
+        <DockPanel Grid.Column="1"
+                   LastChildFill="True"
+                   VerticalSpacing="12">
+            <DockPanel DockPanel.Dock="Top" LastChildFill="True" HorizontalSpacing="8">
+                <Button DockPanel.Dock="Right" Classes="primary-button" Command="{Binding AddProviderCommand}" HorizontalAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="Plus" Width="16" Height="16"/>
+                        <TextBlock Text="{Binding Localization[AddProvider]}"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedProvider.Name}" FontSize="22" FontWeight="Bold"/>
+            </DockPanel>
+
+            <!-- Action Buttons -->
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <Button Classes="primary-button"
+                        Command="{Binding DeleteProviderCommand}"
+                        CommandParameter="{Binding SelectedProvider}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="Delete" Width="16" Height="16"/>
+                        <TextBlock Text="{Binding Localization[Delete]}"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="primary-button" Command="{Binding SaveProviderCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="16" Height="16"/>
+                        <TextBlock Text="{Binding Localization[Save]}"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <Border Classes="card" Padding="14">
+                <ScrollViewer  Padding="0,0">
+                    <StackPanel Spacing="16" >
+
+                        <!-- 1. Provider Name -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{Binding Localization[ProviderTypeLabel]}" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding ProviderName, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <!-- 1. Provider Type -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{Binding Localization[ProviderTypeLabel]}" FontWeight="SemiBold"/>
+                            <ComboBox ItemsSource="{Binding ProviderTypes}"
+                                      SelectedItem="{Binding ProviderType}"
+                                      HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <!-- 2. API Key -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{Binding Localization[ApiKeyLabel]}" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding ProviderApiKey}" PasswordChar="●"
+                                     PlaceholderText="{Binding Localization[ApiKeyPlaceholder]}"/>
+                        </StackPanel>
+
+                        <!-- 3. Endpoint -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{Binding Localization[EndpointLabel]}" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding ProviderEndpoint}"
+                                     PlaceholderText="{Binding Localization[EndpointPlaceholder]}"/>
+                        </StackPanel>
+
+                        <!-- 4. Model List -->
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding Localization[ModelListLabel]}" FontWeight="SemiBold"/>
+
+                            <!-- Fetch models button -->
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Button Classes="primary-button"
+                                        Command="{Binding FetchModelsCommand}"
+                                        IsEnabled="{Binding !IsFetchingModels}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <materialIcons:MaterialIcon Kind="CloudDownload" Width="16" Height="16"/>
+                                        <TextBlock Text="{Binding Localization[FetchModels]}"/>
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                           Text="{Binding StatusMessage}"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+
+                            <!-- Fetched models list (click to add) -->
+                            <ItemsControl x:Name="FetchedModelsItems"
+                                          ItemsSource="{Binding FetchedModels}"
+                                          IsVisible="{Binding FetchedModels.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Classes="transparent-button"
+                                                Click="OnFetchedModelClick"
+                                                Padding="8,4" Margin="0,0,6,4">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <materialIcons:MaterialIcon Kind="PlusCircleOutline" Width="12" Height="12"
+                                                                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                                                <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" FontSize="12"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Manual model list: one row per model with multimodal flag -->
+                            <ItemsControl ItemsSource="{Binding ProviderModels}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ProviderModelItem">
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                                            <TextBox Text="{Binding ModelId, Mode=TwoWay}"
+                                                     PlaceholderText="{Binding $parent[UserControl].DataContext.Localization[ModelListPlaceholder]}"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <CheckBox IsChecked="{Binding IsMultimodal, Mode=TwoWay}"
+                                                          Content="{Binding $parent[UserControl].DataContext.Localization[Multimodal]}"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Classes="transparent-button" Padding="4"
+                                                    Command="{Binding $parent[UserControl].DataContext.RemoveModelCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip.Tip="{Binding $parent[UserControl].DataContext.Localization[Delete]}">
+                                                <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14"/>
+                                            </Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Classes="transparent-button" HorizontalAlignment="Left" Padding="8,4"
+                                    Command="{Binding AddModelCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14"/>
+                                    <TextBlock Text="{Binding Localization[AddModel]}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </DockPanel>
+
+    </Grid>
+</UserControl>

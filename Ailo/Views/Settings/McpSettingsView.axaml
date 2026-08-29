@@ -1,0 +1,123 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Ailo.ViewModels"
+             xmlns:mcp="using:Ailo.AI.Mcp"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="Ailo.Views.Settings.McpSettingsView"
+             x:DataType="vm:McpSettingsViewModel">
+    <Grid ColumnDefinitions="220,*" ColumnSpacing="12">
+        <Grid RowDefinitions="Auto,*" RowSpacing="8">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Classes="primary-button" Command="{Binding AddMcpServerCommand}" Padding="8,5">
+                    <materialIcons:MaterialIcon Kind="Plus" Width="16" Height="16"/>
+                </Button>
+                <TextBlock Text="{Binding Localization[McpSettings]}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"/>
+            </DockPanel>
+            <ListBox Grid.Row="1" ItemsSource="{Binding Servers}" SelectedItem="{Binding SelectedServer}"
+                     Background="Transparent" BorderThickness="1" CornerRadius="{DynamicResource CornerRadiusCompact}">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:McpServerItem">
+                        <Grid ColumnDefinitions="*,Auto" Margin="4" MinHeight="52" HorizontalAlignment="Stretch" ColumnSpacing="4">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Transport}" FontSize="11" Opacity="0.65"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" IsChecked="{Binding IsEnabled, Mode=TwoWay}" VerticalAlignment="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" RowSpacing="10">
+            <DockPanel LastChildFill="True">
+                <TextBlock Text="{Binding ServerName}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <ScrollViewer Grid.Row="1">
+                <StackPanel Spacing="12">
+                    <Border Classes="card" Padding="14">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding Localization[McpSettingsDescription]}" Opacity="0.7" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding Localization[McpServerName]}" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding ServerName, Mode=TwoWay}"/>
+                            <CheckBox Content="{Binding Localization[McpEnabled]}" IsChecked="{Binding ServerEnabled, Mode=TwoWay}"/>
+                            <TextBlock Text="{Binding Localization[McpTransport]}" FontWeight="SemiBold"/>
+                            <ComboBox ItemsSource="{Binding TransportKinds}" SelectedItem="{Binding Transport, Mode=TwoWay}"
+                                      Width="220" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{Binding Localization[McpEndpoint]}" FontWeight="SemiBold"
+                                       IsVisible="{Binding IsHttpTransport}"/>
+                            <TextBox Text="{Binding Endpoint, Mode=TwoWay}" PlaceholderText="https://example.com/mcp"
+                                     IsVisible="{Binding IsHttpTransport}"/>
+                            <TextBlock Text="{Binding Localization[McpCommand]}" FontWeight="SemiBold"
+                                       IsVisible="{Binding IsStdioTransport}"/>
+                            <TextBox Text="{Binding Command, Mode=TwoWay}" PlaceholderText="npx / dotnet / python"
+                                     IsVisible="{Binding IsStdioTransport}"/>
+                            <TextBlock Text="{Binding Localization[McpArguments]}" FontWeight="SemiBold"
+                                       IsVisible="{Binding IsStdioTransport}"/>
+                            <TextBox Text="{Binding ArgumentsJson, Mode=TwoWay}" AcceptsReturn="True" MinHeight="44"
+                                     IsVisible="{Binding IsStdioTransport}"/>
+                            <TextBlock Text="{Binding Localization[McpEnvironment]}" FontWeight="SemiBold"
+                                       IsVisible="{Binding IsStdioTransport}"/>
+                            <TextBox Text="{Binding EnvironmentJson, Mode=TwoWay}" AcceptsReturn="True" MinHeight="44"
+                                     IsVisible="{Binding IsStdioTransport}"/>
+                            <TextBlock Text="{Binding Localization[McpHeaders]}" FontWeight="SemiBold"
+                                       IsVisible="{Binding IsHttpTransport}"/>
+                            <TextBox Text="{Binding HeadersJson, Mode=TwoWay}" AcceptsReturn="True" MinHeight="44"
+                                     IsVisible="{Binding IsHttpTransport}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card" Padding="14">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right" Classes="transparent-button" Command="{Binding RefreshMcpToolsCommand}" IsEnabled="{Binding !IsRefreshing}">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <materialIcons:MaterialIcon Kind="Refresh" Width="15" Height="15"/>
+                                        <TextBlock Text="{Binding Localization[RefreshMcpTools]}"/>
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock Text="{Binding Localization[McpTools]}" FontWeight="SemiBold"/>
+                            </DockPanel>
+                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Tools}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:McpToolItem">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,0,0,8">
+                                            <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}" VerticalAlignment="Top"/>
+                                            <StackPanel Grid.Column="1" Spacing="2">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding Description}" Opacity="0.65" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                    <Button Classes="primary-button" Command="{Binding SaveMcpServerCommand}" Padding="10,5">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="15" Height="15"/>
+                            <TextBlock Text="{Binding Localization[Save]}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="primary-button" Command="{Binding DeleteMcpServerCommand}" CommandParameter="{Binding SelectedServer}" Padding="10,5">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <materialIcons:MaterialIcon Kind="Delete" Width="15" Height="15"/>
+                            <TextBlock Text="{Binding Localization[Delete]}"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

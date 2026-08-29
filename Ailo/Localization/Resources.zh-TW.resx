@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <data name="AppTitle">
+        <value>轻灵</value>
+    </data>
+    <data name="AppSlogan">
+        <value>轻灵 - 轻轻一唤，智能即来</value>
+    </data>
+    <data name="Settings">
+        <value>設置</value>
+    </data>
+    <data name="AlwaysOnTop">
+        <value>視窗置頂</value>
+    </data>
+    <data name="GeneralSettings">
+        <value>一般設定</value>
+    </data>
+    <data name="ApiKey">
+        <value>API Key</value>
+    </data>
+    <data name="Skills">
+        <value>提示詞</value>
+    </data>
+    <data name="Tools">
+        <value>工具</value>
+    </data>
+    <data name="ToolSettings">
+        <value>工具設定</value>
+    </data>
+    <data name="ToolSettingsDescription">
+        <value>選擇模型在對話中可以使用的工具。</value>
+    </data>
+    <data name="ToolCategoryWeb"><value>網頁</value></data>
+    <data name="ToolCategoryWorkspace"><value>工作區</value></data>
+    <data name="ToolCategoryScheduledJobs"><value>排程工作</value></data>
+    <data name="ToolCategorySystem"><value>系統</value></data>
+    <data name="ToolCategoryOther"><value>其他</value></data>
+    <data name="ToolSettingsSaved">
+        <value>勾選狀態會自動儲存。</value>
+    </data>
+    <data name="ShellToolConfiguration">
+        <value>Shell 執行</value>
+    </data>
+    <data name="ShellToolConfigurationDescription">
+        <value>選取工作區資料夾後，設定 Agent 使用的 Shell 後端。</value>
+    </data>
+    <data name="ShellToolRequiresWorkspace">
+        <value>在聊天視窗選取工作區資料夾後，才會啟用 Shell 執行。</value>
+    </data>
+    <data name="ShellToolLocal">
+        <value>LocalShellTool（本機）</value>
+    </data>
+    <data name="ShellToolLocalDescription">
+        <value>在本機執行命令，並限制在已選取的工作區資料夾內。</value>
+    </data>
+    <data name="ShellToolDocker">
+        <value>DockerShellTool（容器）</value>
+    </data>
+    <data name="ShellToolDockerDescription">
+        <value>在 OCI 容器中執行命令，並掛載已選取的工作區資料夾。</value>
+    </data>
+    <data name="ShellToolDockerUnavailable">
+        <value>未偵測到可用的 Docker/Podman OCI 容器執行環境。</value>
+    </data>
+    <data name="ToolFetchWebpage">
+        <value>取得網頁內容</value>
+    </data>
+    <data name="ToolFetchWebpageDescription">
+        <value>讀取公開網頁並擷取可讀文字。</value>
+    </data>
+    <data name="ToolOpenWebpage">
+        <value>在瀏覽器中開啟網頁</value>
+    </data>
+    <data name="ToolOpenWebpageDescription">
+        <value>在系統預設瀏覽器中開啟 http/https 網頁或已授權的本機 HTML 檔案。</value>
+    </data>
+    <data name="ToolGetWorkspaceEntries">
+        <value>取得工作區項目</value>
+    </data>
+    <data name="ToolGetWorkspaceEntriesDescription">
+        <value>列出目前對話明確選取的檔案和資料夾。</value>
+    </data>
+    <data name="ToolReadWorkspaceFile">
+        <value>讀取工作區檔案</value>
+    </data>
+    <data name="ToolReadWorkspaceFileDescription">
+        <value>讀取已選取工作區中的 UTF-8 文字檔案。</value>
+    </data>
+    <data name="ToolWriteWorkspaceFile">
+        <value>寫入工作區檔案</value>
+    </data>
+    <data name="ToolWriteWorkspaceFileDescription">
+        <value>在已選取的工作區中建立或更新文字檔案。</value>
+    </data>
+    <data name="ToolCreateWorkspaceDirectory">
+        <value>建立工作區資料夾</value>
+    </data>
+    <data name="ToolCreateWorkspaceDirectoryDescription">
+        <value>在已選取的工作區資料夾中建立目錄。</value>
+    </data>
+    <data name="ToolListWorkspaceDirectory">
+        <value>列出工作區目錄</value>
+    </data>
+    <data name="ToolListWorkspaceDirectoryDescription">
+        <value>列出已選取工作區目錄中的檔案和資料夾。</value>
+    </data>
+    <data name="ToolScheduleNotification">
+        <value>建立日程通知</value>
+    </data>
+    <data name="ToolScheduleNotificationDescription">
+        <value>使用 Cron 表達式建立可持久化的桌面週期通知。</value>
+    </data>
+    <data name="ToolShowNotification">
+        <value>傳送通知</value>
+    </data>
+    <data name="ToolShowNotificationDescription">
+        <value>立即傳送原生系統通知，或傳送正文支援 Markdown 轉譯的置頂通知視窗。</value>
+    </data>
+    <data name="ToolGetSystemInformation">
+        <value>取得系統資訊</value>
+    </data>
+    <data name="ToolGetSystemInformationDescription">
+        <value>取得目前時間、作業系統資訊或目前系統使用者資訊。</value>
+    </data>
+    <data name="ToolScheduleAgentJob">
+        <value>建立排程 Agent 工作</value>
+    </data>
+    <data name="ToolScheduleAgentJobDescription">
+        <value>建立使用 Docker 隔離工作目錄的週期 Agent 工作。</value>
+    </data>
+    <data name="ToolListScheduledJobs"><value>檢視排程工作</value></data>
+    <data name="ToolListScheduledJobsDescription"><value>檢視所有可持久化的週期工作及其排程。</value></data>
+    <data name="ToolUpdateScheduledJob"><value>修改排程工作</value></data>
+    <data name="ToolUpdateScheduledJobDescription"><value>修改可持久化週期工作的排程、參數或啟用狀態。</value></data>
+    <data name="ToolDeleteScheduledJob"><value>刪除排程工作</value></data>
+    <data name="ToolDeleteScheduledJobDescription"><value>永久刪除可持久化的週期工作。</value></data>
+    <data name="Shortcut">
+        <value>快捷鍵</value>
+    </data>
+    <data name="NewConversation">
+        <value>新對話</value>
+    </data>
+    <data name="HistoryPlaceholder">
+        <value>選擇歷史對話</value>
+    </data>
+    <data name="History">
+        <value>對話歷史</value>
+    </data>
+    <data name="Jobs"><value>排程工作</value></data>
+    <data name="JobsSettings"><value>排程工作管理</value></data>
+    <data name="JobDetails"><value>工作詳細資料</value></data>
+    <data name="JobId"><value>工作 ID</value></data>
+    <data name="JobType"><value>工作類型</value></data>
+    <data name="CronExpression"><value>Cron 表達式</value></data>
+    <data name="JobParameters"><value>參數（JSON）</value></data>
+    <data name="JobEnabled"><value>啟用</value></data>
+    <data name="LastRunAt"><value>上次執行</value></data>
+    <data name="NextRunAt"><value>下次執行</value></data>
+    <data name="JobCronRequired"><value>請輸入 Cron 表達式。</value></data>
+    <data name="JobParametersRequired"><value>請輸入 JSON 參數。</value></data>
+    <data name="JobSaved"><value>排程工作已儲存。</value></data>
+    <data name="JobDeleted"><value>排程工作已刪除。</value></data>
+    <data name="StartConversation">
+        <value>開始對話</value>
+    </data>
+    <data name="SkillPlaceholder">
+        <value>選擇提示詞</value>
+    </data>
+    <data name="ModelPlaceholder">
+        <value>選擇模型</value>
+    </data>
+    <data name="InputPlaceholder">
+        <value>輸入內容，按 Enter 傳送…</value>
+    </data>
+    <data name="Send">
+        <value>傳送</value>
+    </data>
+    <data name="Stop">
+        <value>停止</value>
+    </data>
+    <data name="Theme">
+        <value>主題</value>
+    </data>
+    <data name="ThemeDescriptionShort">
+        <value>跟隨系統、淺色或深色模式。</value>
+    </data>
+    <data name="Language">
+        <value>語言</value>
+    </data>
+    <data name="LanguageDescription">
+        <value>選擇介面語言，修改後立即生效並自動儲存。</value>
+    </data>
+    <data name="System">
+        <value>跟隨系統</value>
+    </data>
+    <data name="Light">
+        <value>淺色</value>
+    </data>
+    <data name="Dark">
+        <value>深色</value>
+    </data>
+    <data name="Startup">
+        <value>開機自啟</value>
+    </data>
+    <data name="StartupDescription">
+        <value>登入系統後自動啟動 轻灵。</value>
+    </data>
+    <data name="DataDirectory">
+        <value>資料目錄</value>
+    </data>
+    <data name="DataDirectoryDescription">
+        <value>用於儲存對話、服務提供者、提示詞、附件、匯出內容和日誌。修改後重新啟動生效。</value>
+    </data>
+    <data name="DataDirectoryPlaceholder">
+        <value>選擇 轻灵 資料存放資料夾</value>
+    </data>
+    <data name="Browse">
+        <value>瀏覽…</value>
+    </data>
+    <data name="MigrateData">
+        <value>移轉目前資料</value>
+    </data>
+    <data name="MigrateDataDescription">
+        <value>將目前所有資料複製到新目錄，並覆寫其中已有檔案；原目錄資料會保留。</value>
+    </data>
+    <data name="ApplyDataDirectory">
+        <value>套用資料目錄</value>
+    </data>
+    <data name="SelectDataDirectory">
+        <value>選擇資料目錄</value>
+    </data>
+    <data name="DataDirectoryUpdatedRestartRequired">
+        <value>資料目錄已更新，重新啟動 轻灵 後生效。</value>
+    </data>
+    <data name="ApiKeyManagement">
+        <value>API Key 管理</value>
+    </data>
+    <data name="AddProvider">
+        <value>新增設定</value>
+    </data>
+    <data name="ProviderTypeLabel">
+        <value>模型提供商</value>
+    </data>
+    <data name="ApiKeyLabel">
+        <value>API 金鑰</value>
+    </data>
+    <data name="EndpointLabel">
+        <value>端點</value>
+    </data>
+    <data name="ModelListLabel">
+        <value>模型清單</value>
+    </data>
+    <data name="FetchModels">
+        <value>從 API 獲取模型清單</value>
+    </data>
+    <data name="FetchingModels">
+        <value>正在獲取模型清單…</value>
+    </data>
+    <data name="FetchedModelsCount">
+        <value>已獲取 {0} 個模型，點擊新增。</value>
+    </data>
+    <data name="FetchModelsNotSupported">
+        <value>此提供商不支援獲取模型清單。</value>
+    </data>
+    <data name="ModelListPlaceholder">
+        <value>模型清單：每行一個，也可用逗號或分號分隔</value>
+    </data>
+    <data name="EndpointPlaceholder">
+        <value>端點（OpenAI 可留空）</value>
+    </data>
+    <data name="ApiKeyPlaceholder">
+        <value>API Key（留空保留既有密鑰）</value>
+    </data>
+    <data name="Save">
+        <value>儲存</value>
+    </data>
+    <data name="SkillManagement">
+        <value>提示詞管理</value>
+    </data>
+    <data name="CustomSkill">
+        <value>自訂提示詞</value>
+    </data>
+    <data name="SkillNamePlaceholder">
+        <value>提示詞名稱</value>
+    </data>
+    <data name="SkillPromptPlaceholder">
+        <value>System prompt（內建提示詞唯讀）</value>
+    </data>
+    <data name="SaveSkill">
+        <value>儲存提示詞</value>
+    </data>
+    <data name="ChatShortcut">
+        <value>聊天視窗快捷鍵</value>
+    </data>
+    <data name="ShortcutHint">
+        <value>點擊輸入框後按下組合鍵完成設定。快捷鍵在主視窗和設定視窗中生效。</value>
+    </data>
+    <data name="ShortcutPlaceholder">
+        <value>點擊後按下組合鍵，例如 Ctrl+Shift+Space</value>
+    </data>
+    <data name="SelectApiKey">
+        <value>選擇 API Key</value>
+    </data>
+    <data name="Ready">
+        <value>已就緒。</value>
+    </data>
+    <data name="NoProvider">
+        <value>請先在 SQLite 設定中新增並啟用服務商。</value>
+    </data>
+    <data name="NewConversationStatus">
+        <value>將於首次傳送時建立新對話。</value>
+    </data>
+    <data name="Thinking">
+        <value>思考過程</value>
+    </data>
+    <data name="Completed">
+        <value>已完成。</value>
+    </data>
+    <data name="Stopped">
+        <value>已停止產生。</value>
+    </data>
+    <data name="ProviderSaved">
+        <value>服務商已儲存。</value>
+    </data>
+    <data name="SkillSaved">
+        <value>提示詞已儲存。</value>
+    </data>
+    <data name="AddingProvider">
+        <value>填寫服務商設定後儲存。</value>
+    </data>
+    <data name="AddingSkill">
+        <value>填寫自訂提示詞後儲存。</value>
+    </data>
+    <data name="SelectProviderFirst">
+        <value>請先選擇一個已啟用的服務商。</value>
+    </data>
+    <data name="Delete">
+        <value>刪除</value>
+    </data>
+    <data name="ProviderDeleted">
+        <value>服務商已刪除。</value>
+    </data>
+    <data name="SkillDeleted">
+        <value>提示詞已刪除。</value>
+    </data>
+    <data name="ShortcutCleared">
+        <value>快捷鍵已清除。</value>
+    </data>
+    <data name="StartupEnabled">
+        <value>已開啟開機自啟。</value>
+    </data>
+    <data name="StartupDisabled">
+        <value>已關閉開機自啟。</value>
+    </data>
+    <data name="StartupPermissionRequired">
+        <value>需要系統權限，已開啟系統啟動項目設定。</value>
+    </data>
+    <data name="AccentColor">
+        <value>主題色</value>
+    </data>
+    <data name="AccentColorDescription">
+        <value>選擇預設顏色，或使用顏色選擇器自訂 轻灵 的主題色。</value>
+    </data>
+    <data name="CustomAccentColor">
+        <value>自訂顏色</value>
+    </data>
+    <data name="About">
+        <value>關於</value>
+    </data>
+    <data name="CurrentVersionLabel">
+        <value>目前版本</value>
+    </data>
+    <data name="CheckForUpdates">
+        <value>檢查更新</value>
+    </data>
+    <data name="CheckingForUpdates">
+        <value>正在檢查更新…</value>
+    </data>
+    <data name="NoUpdates">
+        <value>目前已是最新版本。</value>
+    </data>
+    <data name="UpdateAvailable">
+        <value>發現新版本，正在背景下載。</value>
+    </data>
+    <data name="UpdateReady">
+        <value>更新檔已下載完成，等待確認。</value>
+    </data>
+    <data name="UpdateCheckFailed">
+        <value>更新失敗：{0}</value>
+    </data>
+    <data name="UpdateDownloadTitle">
+        <value>轻灵 有新版本</value>
+    </data>
+    <data name="UpdateDownloadMessage">
+        <value>發現 轻灵 新版本，是否立即下載？</value>
+    </data>
+    <data name="UpdateInstallTitle">
+        <value>轻灵 更新已就緒</value>
+    </data>
+    <data name="UpdateInstallMessage">
+        <value>更新檔已下載完成，是否立即開始安裝？</value>
+    </data>
+    <data name="UpdateVersionDetails">
+        <value>目前版本：{0}&#xA;新版本：{1}</value>
+    </data>
+    <data name="ReleaseDetails">
+        <value>發布說明：{0}</value>
+    </data>
+    <data name="Later">
+        <value>稍後更新</value>
+    </data>
+    <data name="DownloadNow">
+        <value>立即下載</value>
+    </data>
+    <data name="UpdateNow">
+        <value>立即安裝</value>
+    </data>
+    <data name="DownloadingUpdate">
+        <value>正在下載更新…</value>
+    </data>
+    <data name="UpdateDownloadFailed">
+        <value>更新失敗：{0}</value>
+    </data>
+    <data name="NewChatWindowShortcut">
+        <value>新增聊天視窗快捷鍵</value>
+    </data>
+    <data name="NewChatWindowShortcutHint">
+        <value>點擊輸入框後按下組合鍵。此快捷鍵每次都會新增聊天視窗。</value>
+    </data>
+    <data name="HistoryDeleted">
+        <value>對話已刪除。</value>
+    </data>
+    <data name="Cancel">
+        <value>取消</value>
+    </data>
+    <data name="ConfirmDeleteTitle">
+        <value>確認刪除</value>
+    </data>
+    <data name="ConfirmDeleteMessage">
+        <value>確定要刪除「{0}」嗎？此操作無法在應用程式中還原。</value>
+    </data>
+    <data name="CopySelectedText">
+        <value>複製選取的文字</value>
+    </data>
+    <data name="CopyMarkdownContent">
+        <value>複製 Markdown 訊息</value>
+    </data>
+    <data name="TrayShowChat">
+        <value>開啟聊天</value>
+    </data>
+    <data name="TrayShowSettings">
+        <value>開啟設定</value>
+    </data>
+    <data name="TrayExit">
+        <value>結束</value>
+    </data>
+    <data name="Multimodal">
+        <value>多模態</value>
+    </data>
+    <data name="AddModel">
+        <value>新增模型</value>
+    </data>
+    <data name="AddImage">
+        <value>新增圖片</value>
+    </data>
+    <data name="RemoveAttachment">
+        <value>移除</value>
+    </data>
+    <data name="ViewImage">
+        <value>檢視圖片</value>
+    </data>
+    <data name="ImagePreviewTitle">
+        <value>圖片預覽 - {0}</value>
+    </data>
+    <data name="ZoomIn">
+        <value>放大</value>
+    </data>
+    <data name="ZoomOut">
+        <value>縮小</value>
+    </data>
+    <data name="ActualSize">
+        <value>原始大小</value>
+    </data>
+    <data name="FitToWindow">
+        <value>符合視窗</value>
+    </data>
+    <data name="Close">
+        <value>關閉</value>
+    </data>
+    <data name="OpenWorkspaceEntry">
+        <value>開啟工作區位置</value>
+    </data>
+    <data name="Mcp">
+        <value>MCP</value>
+    </data>
+    <data name="McpSettings">
+        <value>MCP 服務</value>
+    </data>
+    <data name="McpSettingsDescription">
+        <value>連接本地 stdio 或 HTTP MCP 服務。只有啟用的服務和工具會提供給模型。</value>
+    </data>
+    <data name="NewMcpServer">
+        <value>新增 MCP 服務</value>
+    </data>
+    <data name="AddingMcpServer">
+        <value>正在新增 MCP 服務…</value>
+    </data>
+    <data name="McpServerName">
+        <value>服務名稱</value>
+    </data>
+    <data name="McpServerNameRequired">
+        <value>請輸入 MCP 服務名稱。</value>
+    </data>
+    <data name="McpTransport">
+        <value>傳輸方式</value>
+    </data>
+    <data name="McpEndpoint">
+        <value>HTTP 位址</value>
+    </data>
+    <data name="McpCommand">
+        <value>命令</value>
+    </data>
+    <data name="McpArguments">
+        <value>參數 JSON 陣列</value>
+    </data>
+    <data name="McpEnvironment">
+        <value>環境變數 JSON 物件</value>
+    </data>
+    <data name="McpHeaders">
+        <value>HTTP 標頭 JSON 物件</value>
+    </data>
+    <data name="McpEnabled">
+        <value>啟用此服務</value>
+    </data>
+    <data name="McpTools">
+        <value>工具清單</value>
+    </data>
+    <data name="RefreshMcpTools">
+        <value>重新整理工具</value>
+    </data>
+    <data name="RefreshingMcpTools">
+        <value>正在重新整理工具…</value>
+    </data>
+    <data name="McpToolsRefreshed">
+        <value>已發現 {0} 個工具。</value>
+    </data>
+    <data name="McpServerSaved">
+        <value>MCP 服務已儲存。</value>
+    </data>
+    <data name="McpServerDeleted">
+        <value>MCP 服務已刪除。</value>
+    </data>
+    <data name="McpTypeStdio">
+        <value>Stdio</value>
+    </data>
+    <data name="McpTypeStreamableHttp">
+        <value>Streamable HTTP</value>
+    </data>
+</root>
