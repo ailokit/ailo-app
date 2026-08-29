@@ -1,9 +1,12 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Ailo.Composition;
 using Ailo.Localization;
@@ -36,6 +39,20 @@ public partial class App : Application
     {
         MarkdownView.ConfigurePipeline();
         AvaloniaXamlLoader.Load(this);
+
+        // macOS can use a different fallback font for Latin characters and digits than
+        // for Chinese text, which makes mixed strings appear vertically misaligned.
+        // PingFang SC contains all of these glyphs with consistent metrics.
+        if (OperatingSystem.IsMacOS())
+        {
+            Styles.Add(new Style(selector => selector.OfType<Control>())
+            {
+                Setters =
+                {
+                    new Setter(TextElement.FontFamilyProperty, new FontFamily("PingFang SC"))
+                }
+            });
+        }
 #if DEBUG
         this.AttachDeveloperTools();
 #endif
