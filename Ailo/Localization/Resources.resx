@@ -376,9 +376,6 @@
     <data name="AccentColorDescription">
         <value>Choose a preset or use the color picker to customize Ailo's accent color.</value>
     </data>
-    <data name="CustomAccentColor">
-        <value>Custom color</value>
-    </data>
     <data name="About">
         <value>About</value>
     </data>

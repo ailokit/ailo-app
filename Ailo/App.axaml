@@ -32,7 +32,6 @@
             </FluentTheme.Palettes>
         </FluentTheme>
         <materialIcons:MaterialIconStyles />
-        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
         <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml" />
         <!-- Shared modern surface language layered on top of Fluent. -->
         <Style Selector=":is(Button)">

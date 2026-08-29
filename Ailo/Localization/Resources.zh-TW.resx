@@ -367,9 +367,6 @@
     <data name="AccentColorDescription">
         <value>選擇預設顏色，或使用顏色選擇器自訂 轻灵 的主題色。</value>
     </data>
-    <data name="CustomAccentColor">
-        <value>自訂顏色</value>
-    </data>
     <data name="About">
         <value>關於</value>
     </data>

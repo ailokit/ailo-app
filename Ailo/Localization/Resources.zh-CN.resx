@@ -370,9 +370,6 @@
     <data name="AccentColorDescription">
         <value>选择预设颜色，或使用颜色选择器自定义 轻灵 的主题色。</value>
     </data>
-    <data name="CustomAccentColor">
-        <value>自定义颜色</value>
-    </data>
     <data name="About">
         <value>关于</value>
     </data>
