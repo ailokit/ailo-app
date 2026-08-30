@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Ailo.Jobs;
 
-/// <summary>Persists Cron job definitions, JSON parameters, and execution checkpoints.</summary>
+/// <summary>Persists Cron job definitions, one-time state, JSON parameters, and execution checkpoints.</summary>
 public sealed class CronJobRepository(SqliteDatabase database)
 {
     public async Task<CronJob> CreateAsync(CronJob job, CancellationToken cancellationToken = default)
@@ -12,9 +12,9 @@ public sealed class CronJobRepository(SqliteDatabase database)
         await using var command = connection.CreateCommand();
         command.CommandText = """
             INSERT INTO CronJobs
-                (JobType, CronExpression, ParametersJson, IsEnabled, LastRunAtUtc, NextRunAtUtc, CreatedAtUtc, UpdatedAtUtc)
+                (JobType, CronExpression, ParametersJson, IsEnabled, LastRunAtUtc, NextRunAtUtc, CreatedAtUtc, UpdatedAtUtc, IsOneTime)
             VALUES
-                ($jobType, $cronExpression, $parametersJson, $isEnabled, $lastRunAtUtc, $nextRunAtUtc, $createdAtUtc, $updatedAtUtc)
+                ($jobType, $cronExpression, $parametersJson, $isEnabled, $lastRunAtUtc, $nextRunAtUtc, $createdAtUtc, $updatedAtUtc, $isOneTime)
             RETURNING Id;
             """;
         AddParameters(command, job);
@@ -38,13 +38,13 @@ public sealed class CronJobRepository(SqliteDatabase database)
         await using var command = connection.CreateCommand();
         command.CommandText = enabledOnly ? """
             SELECT Id, JobType, CronExpression, ParametersJson, IsEnabled, LastRunAtUtc,
-                   NextRunAtUtc, CreatedAtUtc, UpdatedAtUtc
+                   NextRunAtUtc, CreatedAtUtc, UpdatedAtUtc, IsOneTime
             FROM CronJobs
             WHERE IsEnabled = 1
             ORDER BY NextRunAtUtc;
             """ : """
             SELECT Id, JobType, CronExpression, ParametersJson, IsEnabled, LastRunAtUtc,
-                   NextRunAtUtc, CreatedAtUtc, UpdatedAtUtc
+                   NextRunAtUtc, CreatedAtUtc, UpdatedAtUtc, IsOneTime
             FROM CronJobs
             ORDER BY IsEnabled DESC, NextRunAtUtc;
             """;
@@ -65,7 +65,7 @@ public sealed class CronJobRepository(SqliteDatabase database)
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT Id, JobType, CronExpression, ParametersJson, IsEnabled, LastRunAtUtc,
-                   NextRunAtUtc, CreatedAtUtc, UpdatedAtUtc
+                   NextRunAtUtc, CreatedAtUtc, UpdatedAtUtc, IsOneTime
             FROM CronJobs
             WHERE Id = $id;
             """;
@@ -125,7 +125,8 @@ public sealed class CronJobRepository(SqliteDatabase database)
                 IsEnabled = $isEnabled,
                 LastRunAtUtc = $lastRunAtUtc,
                 NextRunAtUtc = $nextRunAtUtc,
-                UpdatedAtUtc = $updatedAtUtc
+                UpdatedAtUtc = $updatedAtUtc,
+                IsOneTime = $isOneTime
             WHERE Id = $id;
             """;
         command.Parameters.AddWithValue("$id", job.Id);
@@ -135,6 +136,7 @@ public sealed class CronJobRepository(SqliteDatabase database)
         command.Parameters.AddWithValue("$lastRunAtUtc", job.LastRunAtUtc?.ToUniversalTime().ToString("O") ?? (object)DBNull.Value);
         command.Parameters.AddWithValue("$nextRunAtUtc", job.NextRunAtUtc.ToUniversalTime().ToString("O"));
         command.Parameters.AddWithValue("$updatedAtUtc", job.UpdatedAtUtc.ToUniversalTime().ToString("O"));
+        command.Parameters.AddWithValue("$isOneTime", job.IsOneTime ? 1 : 0);
         return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) > 0;
     }
 
@@ -158,6 +160,7 @@ public sealed class CronJobRepository(SqliteDatabase database)
         command.Parameters.AddWithValue("$nextRunAtUtc", job.NextRunAtUtc.ToUniversalTime().ToString("O"));
         command.Parameters.AddWithValue("$createdAtUtc", job.CreatedAtUtc.ToUniversalTime().ToString("O"));
         command.Parameters.AddWithValue("$updatedAtUtc", job.UpdatedAtUtc.ToUniversalTime().ToString("O"));
+        command.Parameters.AddWithValue("$isOneTime", job.IsOneTime ? 1 : 0);
     }
 
     private static CronJob Read(SqliteDataReader reader) => new(
@@ -169,5 +172,6 @@ public sealed class CronJobRepository(SqliteDatabase database)
         reader.IsDBNull(5) ? null : DateTimeOffset.Parse(reader.GetString(5)),
         DateTimeOffset.Parse(reader.GetString(6)),
         DateTimeOffset.Parse(reader.GetString(7)),
-        DateTimeOffset.Parse(reader.GetString(8)));
+        DateTimeOffset.Parse(reader.GetString(8)),
+        reader.GetInt64(9) != 0);
 }

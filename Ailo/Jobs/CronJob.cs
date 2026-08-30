@@ -1,6 +1,6 @@
 namespace Ailo.Jobs;
 
-/// <summary>Persisted definition and checkpoint for a recurring Cron job.</summary>
+/// <summary>Persisted definition and checkpoint for a recurring or one-time Cron job.</summary>
 public sealed record CronJob(
     int Id,
     string JobType,
@@ -10,4 +10,5 @@ public sealed record CronJob(
     DateTimeOffset? LastRunAtUtc,
     DateTimeOffset NextRunAtUtc,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool IsOneTime = false);

@@ -4,6 +4,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Ailo.AI.Tools;
 using Ailo.Logging;
 using Ailo.Services;
@@ -37,13 +38,29 @@ internal partial class ChatWindow : Window
         InitializeComponent();
         DraftTextBox.AddHandler(KeyDownEvent, OnDraftKeyDown, RoutingStrategies.Tunnel);
         DraftTextBox.AddHandler(TextBox.PastingFromClipboardEvent, OnDraftPastingFromClipboard, RoutingStrategies.Tunnel);
+        Activated += OnWindowActivated;
         ConfigurePlatformTitleBar();
     }
 
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
+        FocusDraftTextBox();
         _ = InitializeAsync();
+    }
+
+    private void OnWindowActivated(object? sender, EventArgs e) => FocusDraftTextBox();
+
+    /// <summary>Places keyboard focus in the chat input after the window is displayed.</summary>
+    internal void FocusDraftTextBox()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (IsVisible)
+            {
+                DraftTextBox.Focus();
+            }
+        }, DispatcherPriority.Input);
     }
 
     private async Task InitializeAsync()
@@ -248,6 +265,7 @@ internal partial class ChatWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        Activated -= OnWindowActivated;
         // The base window disposes the ViewModel (DataContext) and the scope,
         // which triggers full cleanup of all window-scoped resources.
         base.OnClosed(e);

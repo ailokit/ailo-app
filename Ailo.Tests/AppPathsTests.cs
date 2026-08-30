@@ -16,6 +16,7 @@ public sealed class AppPathsTests : IDisposable
         Assert.True(Directory.Exists(paths.ApplicationDataDirectory));
         Assert.True(Directory.Exists(paths.LogsDirectory));
         Assert.True(Directory.Exists(paths.ExportsDirectory));
+        Assert.True(Directory.Exists(paths.DefaultWorkspaceDirectory));
         Assert.Equal(Path.Combine(_root, "ailo.db"), paths.DatabasePath);
     }
 

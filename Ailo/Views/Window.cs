@@ -17,6 +17,16 @@ namespace Ailo.Views;
 /// </summary>
 public abstract class Window : Avalonia.Controls.Window
 {
+    private const int WindowStyleIndex = -16;
+    private const long WindowStyleCaption = 0x00C00000L;
+    private const long WindowStyleSystemMenu = 0x00080000L;
+    private const long WindowStyleMinimizeBox = 0x00020000L;
+    private const long WindowStyleMaximizeBox = 0x00010000L;
+    private const uint SetWindowPosFrameChanged = 0x0020;
+    private const uint SetWindowPosNoActivate = 0x0010;
+    private const uint SetWindowPosNoMove = 0x0002;
+    private const uint SetWindowPosNoSize = 0x0001;
+    private const uint SetWindowPosNoZOrder = 0x0004;
     private const int DwmWindowCornerPreferenceAttribute = 33;
     private const int DwmWindowCornerPreferenceRound = 2;
 
@@ -139,6 +149,8 @@ public abstract class Window : Avalonia.Controls.Window
             return;
         }
 
+        EnableWindowsStateAnimations(handle);
+
         // Keep the client-drawn title bar while asking DWM to render the outer
         // frame. DWM then owns the shadow, DPI scaling and Windows 11 corners.
         var margins = new Margins(1, 1, 1, 1);
@@ -150,6 +162,49 @@ public abstract class Window : Avalonia.Controls.Window
             DwmWindowCornerPreferenceAttribute,
             in cornerPreference,
             sizeof(int));
+    }
+
+    private static void EnableWindowsStateAnimations(nint handle)
+    {
+        // Avalonia's WindowDecorations=None removes these non-client style bits.
+        // The client still owns the title bar and buttons, but Windows needs the
+        // bits present to associate the window with the normal DWM state
+        // transitions (minimize, maximize, restore and close).
+        var style = GetWindowLongPtr(handle, WindowStyleIndex).ToInt64();
+        if (style == 0)
+        {
+            return;
+        }
+
+        var animatedStyle = style
+            | WindowStyleCaption
+            | WindowStyleSystemMenu
+            | WindowStyleMinimizeBox
+            | WindowStyleMaximizeBox;
+
+        if (style == animatedStyle)
+        {
+            return;
+        }
+
+        if (SetWindowLongPtr(handle, WindowStyleIndex, new nint(animatedStyle)) == nint.Zero
+            && Marshal.GetLastWin32Error() != 0)
+        {
+            return;
+        }
+
+        _ = SetWindowPos(
+            handle,
+            nint.Zero,
+            0,
+            0,
+            0,
+            0,
+            SetWindowPosFrameChanged
+                | SetWindowPosNoActivate
+                | SetWindowPosNoMove
+                | SetWindowPosNoSize
+                | SetWindowPosNoZOrder);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -164,4 +219,21 @@ public abstract class Window : Avalonia.Controls.Window
         int attribute,
         in int attributeValue,
         int attributeSize);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
+    private static extern nint GetWindowLongPtr(nint windowHandle, int index);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+    private static extern nint SetWindowLongPtr(nint windowHandle, int index, nint value);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(
+        nint windowHandle,
+        nint insertAfter,
+        int x,
+        int y,
+        int width,
+        int height,
+        uint flags);
 }

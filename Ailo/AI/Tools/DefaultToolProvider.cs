@@ -166,7 +166,7 @@ public class DefaultToolProvider : IChatToolProvider
                 {
                     Name = "schedule_agent_job",
                     Description =
-                        "Creates a persistent recurring agent task. It takes a local-time five- or six-field Cron expression, a prompt, and an existing absolute working directory. Each run uses Docker-only shell access confined to that directory; direct workspace file and directory tools are unavailable."
+                        "Creates a persistent recurring agent task. It takes a local-time five- or six-field Cron expression, a prompt, an optional absolute working directory, and an optional isOneTime flag. If omitted, the application's configured default workspace is selected when the job runs. Each run uses local shell access confined to that directory; set isOneTime to true to delete the job after execution."
                 }),
             formatNotice: toolCall =>
             {

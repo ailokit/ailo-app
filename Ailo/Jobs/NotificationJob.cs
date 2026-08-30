@@ -18,13 +18,14 @@ public sealed class NotificationJob(INotificationService notifications) : ICronJ
         string body,
         string? subtitle = null,
         NotificationType notificationType = NotificationType.Native,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool isOneTime = false)
     {
         ArgumentNullException.ThrowIfNull(scheduler);
         ValidateParameters(title, body, subtitle);
         var parameters = new NotificationJobParameters(title, body, subtitle, notificationType);
         var parametersJson = JsonSerializer.Serialize(parameters, NotificationJobJsonContext.Default.NotificationJobParameters);
-        return scheduler.ScheduleAsync(Type, cronExpression, parametersJson, cancellationToken);
+        return scheduler.ScheduleAsync(Type, cronExpression, parametersJson, cancellationToken, isOneTime);
     }
 
     public async Task ExecuteAsync(CronJob job, CancellationToken cancellationToken)

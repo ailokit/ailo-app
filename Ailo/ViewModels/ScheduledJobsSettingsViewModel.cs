@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -18,6 +19,7 @@ public sealed class ScheduledJobItem(CronJob job) : ObservableObject
     public string CronExpression { get; } = job.CronExpression;
     public string ParametersJson { get; } = FormatParameters(job.ParametersJson);
     public bool IsEnabled { get; } = job.IsEnabled;
+    public bool IsOneTime { get; } = job.IsOneTime;
     public string NextRunAtText { get; } = job.NextRunAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
     public string LastRunAtText { get; } = job.LastRunAtUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "—";
 
@@ -118,15 +120,21 @@ public sealed class ScheduledJobItem(CronJob job) : ObservableObject
 public sealed partial class ScheduledJobsSettingsViewModel : SettingsViewModelBase
 {
     private readonly CronJobScheduler _scheduler;
+    private readonly AppSettingsService _settings;
     private readonly IConfirmationService? _confirmation;
+    private readonly SemaphoreSlim _runtimeSaveGate = new(1, 1);
+    private bool _loadingSettings;
+    private int _runtimeChangeVersion;
 
     public ScheduledJobsSettingsViewModel(
         CronJobScheduler scheduler,
         LocalizationService localization,
+        AppSettingsService settings,
         IConfirmationService? confirmation = null)
         : base(localization)
     {
         _scheduler = scheduler;
+        _settings = settings;
         _confirmation = confirmation;
     }
 
@@ -137,6 +145,14 @@ public sealed partial class ScheduledJobsSettingsViewModel : SettingsViewModelBa
     [ObservableProperty] private string _cronExpression = string.Empty;
     [ObservableProperty] private string _parametersJson = string.Empty;
     [ObservableProperty] private bool _isEnabled;
+    [ObservableProperty] private bool _isOneTime;
+    [ObservableProperty] private string _maxJobRuntimeMinutes =
+        ((int)AppSettingsService.DefaultJobMaxRuntime.TotalMinutes).ToString(CultureInfo.InvariantCulture);
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsJobDetailsVisible))]
+    private bool _isJobSettingsVisible;
+
+    public bool IsJobDetailsVisible => !IsJobSettingsVisible;
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
@@ -144,17 +160,34 @@ public sealed partial class ScheduledJobsSettingsViewModel : SettingsViewModelBa
         foreach (var job in await _scheduler.GetAllAsync(cancellationToken).ConfigureAwait(false))
             Jobs.Add(new ScheduledJobItem(job));
 
+        var maxRuntime = await _settings.GetJobMaxRuntimeAsync(cancellationToken).ConfigureAwait(false);
+        _loadingSettings = true;
+        try
+        {
+            MaxJobRuntimeMinutes = ((int)maxRuntime.TotalMinutes).ToString(CultureInfo.InvariantCulture);
+            IsJobSettingsVisible = false;
+        }
+        finally
+        {
+            _loadingSettings = false;
+        }
         SelectedJob = Jobs.FirstOrDefault();
     }
 
     [RelayCommand]
+    private void ShowJobSettings() => IsJobSettingsVisible = true;
+
+    [RelayCommand]
+    private void ShowJobDetails() => IsJobSettingsVisible = false;
+
+    [RelayCommand]
     private async Task SaveJobAsync()
     {
-        var selectedJob = SelectedJob;
-        if (selectedJob is null) return;
-
         try
         {
+            var selectedJob = SelectedJob;
+            if (selectedJob is null) return;
+
             if (string.IsNullOrWhiteSpace(CronExpression))
             {
                 StatusMessage = T("JobCronRequired");
@@ -168,7 +201,7 @@ public sealed partial class ScheduledJobsSettingsViewModel : SettingsViewModelBa
             }
 
             var updated = await _scheduler.UpdateAsync(
-                selectedJob.Id, CronExpression, ParametersJson, IsEnabled).ConfigureAwait(false);
+                selectedJob.Id, CronExpression, ParametersJson, IsEnabled, isOneTime: IsOneTime).ConfigureAwait(false);
             if (updated is null) return;
 
             await LoadAsync().ConfigureAwait(false);
@@ -179,6 +212,70 @@ public sealed partial class ScheduledJobsSettingsViewModel : SettingsViewModelBa
         {
             ExceptionLogger.Log(exception, nameof(ScheduledJobsSettingsViewModel), "Failed to save scheduled job");
             StatusMessage = exception.Message;
+        }
+    }
+
+    partial void OnMaxJobRuntimeMinutesChanged(string value)
+    {
+        if (_loadingSettings)
+        {
+            return;
+        }
+
+        var version = Interlocked.Increment(ref _runtimeChangeVersion);
+        _ = PersistMaxJobRuntimeAsync(value, version);
+    }
+
+    private async Task PersistMaxJobRuntimeAsync(string value, int version)
+    {
+        if (!TryGetMaxJobRuntime(value, out var maxRuntime)) return;
+
+        await _runtimeSaveGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            // If the user typed another value while an earlier write was waiting, only persist the
+            // latest value. Writes that already started are serialized before this one.
+            if (version != Volatile.Read(ref _runtimeChangeVersion)) return;
+
+            await _settings.SaveJobMaxRuntimeAsync(maxRuntime).ConfigureAwait(false);
+            if (version == Volatile.Read(ref _runtimeChangeVersion))
+            {
+                StatusMessage = T("JobMaxRuntimeSaved");
+            }
+        }
+        catch (Exception exception)
+        {
+            ExceptionLogger.Log(exception, nameof(ScheduledJobsSettingsViewModel), "Failed to save scheduled job settings");
+            if (version == Volatile.Read(ref _runtimeChangeVersion))
+            {
+                StatusMessage = exception.Message;
+            }
+        }
+        finally
+        {
+            _runtimeSaveGate.Release();
+        }
+    }
+
+    private bool TryGetMaxJobRuntime(string value, out TimeSpan maxRuntime)
+    {
+        maxRuntime = default;
+        if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var maxRuntimeMinutes))
+        {
+            StatusMessage = T("JobMaxRuntimeInvalid");
+            return false;
+        }
+
+        maxRuntime = TimeSpan.FromMinutes(maxRuntimeMinutes);
+        try
+        {
+            AppSettingsService.ValidateJobMaxRuntime(maxRuntime);
+            return true;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            StatusMessage = T("JobMaxRuntimeInvalid");
+            return false;
         }
     }
 
@@ -208,12 +305,14 @@ public sealed partial class ScheduledJobsSettingsViewModel : SettingsViewModelBa
 
     partial void OnSelectedJobChanged(ScheduledJobItem? value)
     {
+        IsJobSettingsVisible = false;
         if (value is null)
         {
             JobType = string.Empty;
             CronExpression = string.Empty;
             ParametersJson = string.Empty;
             IsEnabled = false;
+            IsOneTime = false;
             return;
         }
 
@@ -221,5 +320,6 @@ public sealed partial class ScheduledJobsSettingsViewModel : SettingsViewModelBa
         CronExpression = value.CronExpression;
         ParametersJson = value.ParametersJson;
         IsEnabled = value.IsEnabled;
+        IsOneTime = value.IsOneTime;
     }
 }

@@ -44,6 +44,7 @@ public sealed class ChatWindowManager
 
         window.Activate();
         window.Focus();
+        (window as ChatWindow)?.FocusDraftTextBox();
     }
 
     public void ShowNew()
@@ -56,6 +57,7 @@ public sealed class ChatWindowManager
         var window = CreateWindow();
         window.Show();
         window.Focus();
+        (window as ChatWindow)?.FocusDraftTextBox();
 
         _ = InitialWindowAsync(window, conversationId);
     }

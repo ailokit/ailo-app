@@ -42,6 +42,11 @@ public sealed class DatabaseMigrator(SqliteDatabase database)
                 ("$appliedAt", DateTimeOffset.UtcNow.ToString("O"))).ConfigureAwait(false);
         }
 
+        // Keep existing databases usable even if an earlier build recorded the
+        // migration without actually changing the table (for example after an
+        // interrupted or partially deployed upgrade).
+        await EnsureCronJobOneTimeColumnAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -104,6 +109,23 @@ public sealed class DatabaseMigrator(SqliteDatabase database)
             ?? throw new InvalidOperationException($"Missing database migration resource '{resourceName}'.");
         using var reader = new StreamReader(stream);
         return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task EnsureCronJobOneTimeColumnAsync(SqliteConnection connection, SqliteTransaction transaction, CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT 1 FROM pragma_table_info('CronJobs') WHERE name = 'IsOneTime' LIMIT 1;";
+        var columnExists = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is not null;
+
+        if (!columnExists)
+        {
+            await ExecuteAsync(
+                connection,
+                transaction,
+                "ALTER TABLE CronJobs ADD COLUMN IsOneTime INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private sealed record Migration(int Version, string ResourceName);

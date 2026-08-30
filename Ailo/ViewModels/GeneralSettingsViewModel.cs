@@ -34,19 +34,33 @@ public sealed partial class GeneralSettingsViewModel : SettingsViewModelBase
         _state = state;
         _dataDirectoryService = dataDirectoryService;
         _state.PropertyChanged += OnAppStatePropertyChanged;
+        UpdateSelectedAccentColor(AccentColor);
     }
 
     public IReadOnlyList<LanguageOption> LanguageOptions => Localization.LanguageOptions;
     public ObservableCollection<ThemeOption> ThemeOptions { get; } = [];
     public IReadOnlyList<AccentColorOption> AccentColorOptions { get; } =
     [
-        new("sky", "Sky", "#0EA5E9"),
-        new("indigo", "Indigo", "#6366F1"),
-        new("violet", "Violet", "#8B5CF6"),
+        new("lagoon", "Lagoon", "#0EA5E9"),
+        new("cobalt", "Cobalt", "#2563EB"),
+        new("periwinkle", "Periwinkle", "#6366F1"),
+        new("iris", "Iris", "#8B5CF6"),
+        new("fuchsia", "Fuchsia", "#C026D3"),
+        new("mauve", "Mauve", "#A855F7"),
+        new("petal", "Petal", "#EC4899"),
+        new("blush", "Blush", "#F43F5E"),
+        new("flamingo", "Flamingo", "#FB7185"),
+        new("raspberry", "Raspberry", "#BE185D"),
+        new("ember", "Ember", "#F97316"),
+        new("honey", "Honey", "#F59E0B"),
+        new("moss", "Moss", "#84CC16"),
+        new("jade", "Jade", "#10B981"),
         new("teal", "Teal", "#14B8A6"),
-        new("green", "Green", "#22C55E"),
-        new("orange", "Orange", "#F97316"),
-        new("rose", "Rose", "#F43F5E")
+        new("arctic", "Arctic", "#06B6D4"),
+        new("slate", "Slate", "#64748B"),
+        new("deep-sea", "Deep Sea", "#0F766E"),
+        new("midnight", "Midnight", "#1E3A8A"),
+        new("graphite", "Graphite", "#334155")
     ];
 
     [ObservableProperty]
@@ -54,8 +68,6 @@ public sealed partial class GeneralSettingsViewModel : SettingsViewModelBase
 
     [ObservableProperty]
     private Color _accentColor = Color.Parse(AppSettingsService.DefaultAccentColor);
-
-    public IBrush AccentBrush => new SolidColorBrush(AccentColor);
 
     [ObservableProperty]
     private LanguageOption? _selectedLanguage;
@@ -77,7 +89,8 @@ public sealed partial class GeneralSettingsViewModel : SettingsViewModelBase
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         var theme = _state.ThemeKey;
-        var accentColor = _state.AccentColorHex;
+        var accentColor = await _settings.GetAsync(AppSettingsService.AccentColorKey, cancellationToken)
+            ?? _state.AccentColorHex;
         var language = _state.LanguageKey;
         _loadingSettings = true;
         try
@@ -197,7 +210,7 @@ public sealed partial class GeneralSettingsViewModel : SettingsViewModelBase
 
     partial void OnAccentColorChanged(Color value)
     {
-        OnPropertyChanged(nameof(AccentBrush));
+        UpdateSelectedAccentColor(value);
         var hex = ToHex(value);
         AppSettingsService.ApplyAccentColor(hex);
         if (!_loadingSettings && !_syncingAppState)
@@ -274,6 +287,14 @@ public sealed partial class GeneralSettingsViewModel : SettingsViewModelBase
     }
 
     private static string ToHex(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+
+    private void UpdateSelectedAccentColor(Color color)
+    {
+        foreach (var option in AccentColorOptions)
+        {
+            option.IsSelected = option.Color == color;
+        }
+    }
 
     private void OnAppStatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {

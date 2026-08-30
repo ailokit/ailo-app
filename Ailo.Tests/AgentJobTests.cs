@@ -38,6 +38,17 @@ public sealed class AgentJobTests : IDisposable
     }
 
     [Fact]
+    public void CreateParameters_LeavesOmittedDirectoryForExecutionTimeResolution()
+    {
+        var defaultWorkspace = Path.Combine(_root, "default-workspace");
+
+        var parameters = AgentJob.CreateParameters("task", null);
+
+        Assert.Null(parameters.WorkingDirectory);
+        Assert.False(Directory.Exists(defaultWorkspace));
+    }
+
+    [Fact]
     public void ParseParameters_AcceptsCamelCaseToolJson()
     {
         Directory.CreateDirectory(_root);

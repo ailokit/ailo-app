@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ailo.AI.Providers;
 using Ailo.AI.Tools;
+using Ailo.Services;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,12 +16,13 @@ using OpenAI;
 namespace Ailo.Jobs;
 
 /// <summary>
-/// Runs a fresh background agent in a Docker-confined working directory on a recurring schedule.
+/// Runs a fresh background agent in a locally confined working directory on a recurring schedule.
 /// </summary>
 public sealed class AgentJob(
     IServiceScopeFactory scopeFactory,
     ApiProviderRepository providers,
     ShellToolConfiguration shellToolConfiguration,
+    AppPaths appPaths,
     ILogger<AgentJob> logger) : ICronJobHandler, ICronJobParameterValidator
 {
     public const string Type = "agent";
@@ -37,18 +39,19 @@ public sealed class AgentJob(
 
     public string JobType => Type;
 
-    /// <summary>Creates a persisted agent job after validating its prompt and isolated working directory.</summary>
+    /// <summary>Creates a persisted agent job after validating its prompt and working directory.</summary>
     public static Task<CronJob> ScheduleAsync(
         CronJobScheduler scheduler,
         string cronExpression,
         string prompt,
-        string workingDirectory,
-        CancellationToken cancellationToken = default)
+        string? workingDirectory,
+        CancellationToken cancellationToken = default,
+        bool isOneTime = false)
     {
         ArgumentNullException.ThrowIfNull(scheduler);
         var parameters = CreateParameters(prompt, workingDirectory);
         var parametersJson = JsonSerializer.Serialize(parameters, AgentJobJsonContext.Default.AgentJobParameters);
-        return scheduler.ScheduleAsync(Type, cronExpression, parametersJson, cancellationToken);
+        return scheduler.ScheduleAsync(Type, cronExpression, parametersJson, cancellationToken, isOneTime);
     }
 
     public void ValidateParametersJson(string parametersJson) => _ = ParseParameters(parametersJson);
@@ -61,11 +64,6 @@ public sealed class AgentJob(
             throw new InvalidOperationException("Shell execution is disabled in the tool settings.");
         }
 
-        if (!shellToolConfiguration.IsDockerShellAvailable || string.IsNullOrWhiteSpace(shellToolConfiguration.ContainerRuntimeBinary))
-        {
-            throw new InvalidOperationException("A running Docker or Podman OCI runtime is required for scheduled agent jobs.");
-        }
-
         var provider = (await providers.GetAllAsync(cancellationToken).ConfigureAwait(false))
             .FirstOrDefault(static candidate => candidate.IsDefault && candidate.IsEnabled)
             ?? throw new InvalidOperationException("Scheduled agent jobs require an enabled default AI provider.");
@@ -74,19 +72,30 @@ public sealed class AgentJob(
             throw new NotSupportedException("Anthropic will use its dedicated provider adapter.");
         }
 
+        // Resolve the default at execution time so changes to the application's data-directory
+        // configuration take effect for the next run instead of being frozen when scheduled.
+        var configuredDirectory = parameters.WorkingDirectory;
+        var workspaceDirectory = string.IsNullOrWhiteSpace(configuredDirectory)
+            ? appPaths.DefaultWorkspaceDirectory
+            : configuredDirectory;
+        if (string.IsNullOrWhiteSpace(configuredDirectory))
+        {
+            Directory.CreateDirectory(workspaceDirectory);
+        }
+
         // Resolve the directory at execution time too: a path could have been replaced by a symlink since scheduling.
-        var workspaceDirectory = WorkspacePathSecurity.NormalizeEntry(parameters.WorkingDirectory, isDirectory: true).Path;
+        workspaceDirectory = WorkspacePathSecurity.NormalizeEntry(workspaceDirectory, isDirectory: true).Path;
         await using var executionLog = await AgentJobExecutionLog.CreateAsync(workspaceDirectory, job.Id, cancellationToken).ConfigureAwait(false);
         await executionLog.WriteAsync($"START job={job.Id}", cancellationToken).ConfigureAwait(false);
         try
         {
             await using var shellSession = await ShellToolSession.CreateAsync(
-                ShellToolKind.Docker,
+                ShellToolKind.Local,
                 workspaceDirectory,
-                shellToolConfiguration.ContainerRuntimeBinary,
+                dockerBinary: null,
                 cancellationToken).ConfigureAwait(false);
             await using var scope = scopeFactory.CreateAsyncScope();
-            // The scheduled agent's browser tool uses the same working-directory boundary as its Docker shell.
+            // The scheduled agent's browser tool uses the same working-directory boundary as its local shell.
             scope.ServiceProvider.GetRequiredService<ChatWorkspace>()
                 .Replace([new WorkspaceEntry(workspaceDirectory, IsDirectory: true)]);
             var toolRegistry = scope.ServiceProvider.GetRequiredService<ChatToolRegistry>();
@@ -115,8 +124,8 @@ public sealed class AgentJob(
                     This is an unattended execution run. Do not ask the user questions, wait for
                     confirmation, or create a plan; execute the saved task immediately. If blocked,
                     record the reason in your final output.
-                    The only local filesystem capability is run_shell, which runs in a Docker container
-                    confined to '{{workspaceDirectory}}'. Never attempt to access files outside that directory.
+                    The only local filesystem capability is run_shell, which runs in the job's configured
+                    workspace. Never attempt to access files outside that workspace.
                     The workspace file and directory tools are intentionally unavailable.
                     """,
                 ChatOptions = new ChatOptions
@@ -168,7 +177,7 @@ public sealed class AgentJob(
         }
     }
 
-    internal static AgentJobParameters CreateParameters(string prompt, string workingDirectory)
+    internal static AgentJobParameters CreateParameters(string prompt, string? workingDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
         if (prompt.Length > MaximumPromptCharacters)
@@ -176,7 +185,9 @@ public sealed class AgentJob(
             throw new ArgumentException($"Agent prompt cannot exceed {MaximumPromptCharacters} characters.", nameof(prompt));
         }
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
+        if (string.IsNullOrWhiteSpace(workingDirectory))
+            return new AgentJobParameters(prompt.Trim(), null);
+
         if (!Path.IsPathFullyQualified(workingDirectory))
         {
             throw new ArgumentException("The agent working directory must be an absolute path.", nameof(workingDirectory));
@@ -194,7 +205,7 @@ public sealed class AgentJob(
     }
 }
 
-internal sealed record AgentJobParameters(string Prompt, string WorkingDirectory);
+internal sealed record AgentJobParameters(string Prompt, string? WorkingDirectory);
 
 /// <summary>Append-only, flush-on-write execution log for one recurring agent job.</summary>
 internal sealed class AgentJobExecutionLog : IAsyncDisposable

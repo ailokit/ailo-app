@@ -16,7 +16,7 @@ public sealed class CronJobRepositoryTests : IDisposable
         var created = DateTimeOffset.UtcNow;
         var job = new CronJob(
             0, "test", "0 9 * * 1-5", "{\"name\":\"value\"}", true, null,
-            created.AddHours(1), created, created);
+            created.AddHours(1), created, created, IsOneTime: true);
 
         job = await repository.CreateAsync(job);
         Assert.True(job.Id > 0);
@@ -25,6 +25,7 @@ public sealed class CronJobRepositoryTests : IDisposable
         var updated = await repository.GetByIdAsync(job.Id);
 
         Assert.Equal(job, saved);
+        Assert.True(saved!.IsOneTime);
         Assert.Equal(created.AddMinutes(1), updated!.LastRunAtUtc);
         Assert.Equal(created.AddHours(2), updated.NextRunAtUtc);
     }

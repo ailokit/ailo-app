@@ -138,7 +138,7 @@
         <value>Schedule agent job</value>
     </data>
     <data name="ToolScheduleAgentJobDescription">
-        <value>Create a recurring agent task with a Docker-confined working directory.</value>
+        <value>Create a recurring agent task with a local-shell working directory.</value>
     </data>
     <data name="ToolListScheduledJobs"><value>List scheduled jobs</value></data>
     <data name="ToolListScheduledJobsDescription"><value>View all persistent recurring jobs and their schedules.</value></data>
@@ -166,12 +166,20 @@
     <data name="CronExpression"><value>Cron expression</value></data>
     <data name="JobParameters"><value>Parameters (JSON)</value></data>
     <data name="JobEnabled"><value>Enabled</value></data>
+    <data name="JobOneTime"><value>One-time task</value></data>
     <data name="LastRunAt"><value>Last run</value></data>
     <data name="NextRunAt"><value>Next run</value></data>
     <data name="JobCronRequired"><value>A Cron expression is required.</value></data>
     <data name="JobParametersRequired"><value>JSON parameters are required.</value></data>
     <data name="JobSaved"><value>Scheduled job saved.</value></data>
     <data name="JobDeleted"><value>Scheduled job deleted.</value></data>
+    <data name="JobMaxRuntime"><value>Maximum job runtime (minutes)</value></data>
+    <data name="JobMaxRuntimeDescription"><value>Each scheduled job is cancelled after this shared limit. Valid range: 1 minute to 1440 minutes.</value></data>
+    <data name="JobMaxRuntimeInvalid"><value>Maximum job runtime must be an integer from 1 to 1440 minutes.</value></data>
+    <data name="JobMaxRuntimeSaved"><value>Maximum job runtime saved.</value></data>
+    <data name="JobSettings"><value>Job settings</value></data>
+    <data name="JobSettingsDescription"><value>Configure settings shared by scheduled jobs. Changes take effect immediately.</value></data>
+    <data name="BackToJobDetails"><value>Back to job details</value></data>
     <data name="StartConversation">
         <value>Start conversation</value>
     </data>
@@ -227,7 +235,7 @@
         <value>Copy all current data to the new directory and overwrite files already there. The original data is kept.</value>
     </data>
     <data name="ApplyDataDirectory">
-        <value>Apply data directory</value>
+        <value>Apply</value>
     </data>
     <data name="SelectDataDirectory">
         <value>Select data directory</value>
@@ -263,7 +271,7 @@
         <value>Model List</value>
     </data>
     <data name="FetchModels">
-        <value>Fetch models from API</value>
+        <value>Fetch models</value>
     </data>
     <data name="FetchingModels">
         <value>Fetching model list…</value>
@@ -285,6 +293,9 @@
     </data>
     <data name="Save">
         <value>Save</value>
+    </data>
+    <data name="New">
+        <value>New</value>
     </data>
     <data name="SkillManagement">
         <value>Prompt management</value>
@@ -375,9 +386,6 @@
     </data>
     <data name="AccentColorDescription">
         <value>Choose a preset or use the color picker to customize Ailo's accent color.</value>
-    </data>
-    <data name="CustomAccentColor">
-        <value>Custom color</value>
     </data>
     <data name="About">
         <value>About</value>
@@ -473,7 +481,7 @@
         <value>Multimodal</value>
     </data>
     <data name="AddModel">
-        <value>Add model</value>
+        <value>Add</value>
     </data>
     <data name="AddImage">
         <value>Add image</value>
@@ -563,7 +571,7 @@
         <value>Tools</value>
     </data>
     <data name="RefreshMcpTools">
-        <value>Refresh tools</value>
+        <value>Refresh</value>
     </data>
     <data name="RefreshingMcpTools">
         <value>Refreshing tools…</value>

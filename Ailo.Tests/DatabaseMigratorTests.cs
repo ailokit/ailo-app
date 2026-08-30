@@ -26,7 +26,8 @@ public sealed class DatabaseMigratorTests : IDisposable
         Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'McpServers';"));
         Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'McpTools';"));
         Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'CronJobs';"));
-        Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM SchemaMigrations;"));
+        Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM pragma_table_info('CronJobs') WHERE name = 'IsOneTime';"));
+        Assert.Equal(2L, await ScalarAsync(connection, "SELECT COUNT(*) FROM SchemaMigrations;"));
     }
 
     [Fact]
@@ -40,6 +41,37 @@ public sealed class DatabaseMigratorTests : IDisposable
         command.CommandText = "INSERT INTO Messages (Id, ConversationId, SequenceNo, Role, Content, Status, CreatedAt, UpdatedAt) VALUES ('message', 'missing', 1, 0, 'x', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
 
         await Assert.ThrowsAsync<SqliteException>(() => command.ExecuteNonQueryAsync());
+    }
+
+    [Fact]
+    public async Task MigrateAsync_RepairsCronJobsColumn_WhenMigrationWasAlreadyRecorded()
+    {
+        var database = new SqliteDatabase(_databasePath);
+        await using (var connection = await database.OpenConnectionAsync())
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE SchemaMigrations (Version INTEGER NOT NULL PRIMARY KEY, AppliedAt TEXT NOT NULL);
+                INSERT INTO SchemaMigrations (Version, AppliedAt) VALUES (1, CURRENT_TIMESTAMP), (2, CURRENT_TIMESTAMP);
+                CREATE TABLE CronJobs (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    JobType TEXT NOT NULL,
+                    CronExpression TEXT NOT NULL,
+                    ParametersJson TEXT NOT NULL,
+                    IsEnabled INTEGER NOT NULL DEFAULT 1,
+                    LastRunAtUtc TEXT NULL,
+                    NextRunAtUtc TEXT NOT NULL,
+                    CreatedAtUtc TEXT NOT NULL,
+                    UpdatedAtUtc TEXT NOT NULL
+                );
+                """;
+            await command.ExecuteNonQueryAsync();
+        }
+
+        await new DatabaseMigrator(database).MigrateAsync();
+
+        await using var migratedConnection = await database.OpenConnectionAsync();
+        Assert.Equal(1L, await ScalarAsync(migratedConnection, "SELECT COUNT(*) FROM pragma_table_info('CronJobs') WHERE name = 'IsOneTime';"));
     }
 
     public void Dispose()

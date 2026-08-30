@@ -1,9 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Ailo.ViewModels"
-             xmlns:picker="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.ColorPicker"
              x:Class="Ailo.Views.Settings.GeneralSettingsView"
              x:DataType="vm:GeneralSettingsViewModel">
+    <UserControl.Styles>
+        <Style Selector="Button.accent-color-option:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}"/>
+        </Style>
+    </UserControl.Styles>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="16" Margin="0,0,8,0">
         <TextBlock Text="{Binding Localization[GeneralSettings]}" FontSize="22" FontWeight="Bold"/>
@@ -30,48 +34,42 @@
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
-                <DockPanel HorizontalSpacing="6" LastChildFill="True">
-                    <picker:ColorPicker DockPanel.Dock="Right" Color="{Binding AccentColor, Mode=TwoWay}"
-                                        IsAlphaEnabled="False"
-                                        IsAlphaVisible="False"
-                                        IsColorPaletteVisible="False"
-                                        IsHexInputVisible="True"
-                                        IsComponentSliderVisible="False"
-                                        IsComponentTextInputVisible="False"
-                                        IsColorPreviewVisible="False"
-                                        Height="42"
-                                        CornerRadius="{DynamicResource CornerRadiusInput}"
-                                        Padding="4"
-                                        ToolTip.Tip="{Binding Localization[CustomAccentColor]}">
-                        <picker:ColorPicker.Content>
-                            <Border Width="30" Height="30" CornerRadius="{DynamicResource CornerRadiusRound}"
-                                    Background="{Binding AccentBrush}"
-                                    BorderBrush="{DynamicResource InputControlBorderBrush}"
-                                    BorderThickness="1"
-                                    Margin="8,0,0,0"/>
-                        </picker:ColorPicker.Content>
-                    </picker:ColorPicker>
-                    <ItemsControl DockPanel.Dock="Left" ItemsSource="{Binding AccentColorOptions}">
+                <ItemsControl ItemsSource="{Binding AccentColorOptions}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" ItemWidth="42" ItemHeight="42"/>
+                                <WrapPanel Orientation="Horizontal" ItemWidth="44" ItemHeight="44"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:AccentColorOption">
-                                <Button Command="{Binding $parent[ItemsControl].DataContext.SelectAccentColorCommand}"
+                                <Button Classes="accent-color-option"
+                                        Command="{Binding $parent[ItemsControl].DataContext.SelectAccentColorCommand}"
                                         CommandParameter="{Binding}"
                                         Background="Transparent" BorderThickness="0" Padding="4"
                                         ToolTip.Tip="{Binding DisplayName}">
-                                    <Border Width="30" Height="30" CornerRadius="{DynamicResource CornerRadiusRound}"
-                                            Background="{Binding Brush}"
-                                            BorderBrush="{DynamicResource InputControlBorderBrush}"
-                                            BorderThickness="1"/>
+                                    <Grid Width="34" Height="34">
+                                        <Border Width="30" Height="30" CornerRadius="{DynamicResource CornerRadiusRound}"
+                                                Background="{Binding Brush}"
+                                                BorderBrush="{DynamicResource InputControlBorderBrush}"
+                                                BorderThickness="1"/>
+                                        <Border IsVisible="{Binding IsSelected}"
+                                                CornerRadius="{DynamicResource CornerRadiusRound}"
+                                                BorderBrush="{DynamicResource SystemControlHighlightAltAccentBrush}"
+                                                BorderThickness="2"/>
+                                        <Border IsVisible="{Binding IsSelected}"
+                                                Width="14" Height="14"
+                                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                                Background="{DynamicResource SystemControlHighlightAltAccentBrush}"
+                                                CornerRadius="{DynamicResource CornerRadiusSmall}">
+                                            <TextBlock Text="✓" FontSize="10" FontWeight="Bold"
+                                                       Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </DockPanel>
+                </ItemsControl>
             </StackPanel>
         </Border>
         <Border Classes="card" Padding="14">

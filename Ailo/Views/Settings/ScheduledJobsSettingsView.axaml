@@ -7,13 +7,19 @@
     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
         <DockPanel LastChildFill="True">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
-                <Button Classes="primary-button" Command="{Binding DeleteJobCommand}" Padding="10,5">
+                <Button Classes="primary-button" Command="{Binding ShowJobSettingsCommand}" Padding="10,5">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="Tune" Width="16" Height="16"/>
+                        <TextBlock Text="{Binding Localization[JobSettings]}"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="primary-button" Command="{Binding DeleteJobCommand}" IsVisible="{Binding IsJobDetailsVisible}" Padding="10,5">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <materialIcons:MaterialIcon Kind="Delete" Width="16" Height="16"/>
                         <TextBlock Text="{Binding Localization[Delete]}"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="primary-button" Command="{Binding SaveJobCommand}" Padding="10,5">
+                <Button Classes="primary-button" Command="{Binding SaveJobCommand}" IsVisible="{Binding IsJobDetailsVisible}" Padding="10,5">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="16" Height="16"/>
                         <TextBlock Text="{Binding Localization[Save]}"/>
@@ -34,14 +40,16 @@
                     </ListBox.Styles>
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:ScheduledJobItem">
-                            <StackPanel Margin="4" Spacing="3">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                    <TextBlock Text="{Binding JobType}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                    <CheckBox Grid.Column="1" IsChecked="{Binding IsEnabled}" IsHitTestVisible="False"/>
-                                </Grid>
-                                <TextBlock Text="{Binding CronExpression}" FontFamily="monospace" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding NextRunAtText}" FontSize="11" Opacity="0.65"/>
-                            </StackPanel>
+                            <Border Classes="settings-list-divider" Margin="0" BorderBrush="{DynamicResource SettingsListDividerBrush}">
+                                <StackPanel Margin="4" Spacing="3">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                        <TextBlock Text="{Binding JobType}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        <CheckBox Grid.Column="1" IsChecked="{Binding IsEnabled}" IsHitTestVisible="False"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding CronExpression}" FontFamily="monospace" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding NextRunAtText}" FontSize="11" Opacity="0.65"/>
+                                </StackPanel>
+                            </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -50,27 +58,44 @@
             <Border Grid.Column="1" Classes="card" Padding="14">
                 <ScrollViewer>
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{Binding Localization[JobDetails]}" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding Localization[JobId]}" Opacity="0.7"/>
-                        <TextBox Text="{Binding SelectedJob.Id}" IsReadOnly="True"/>
-                        <TextBlock Text="{Binding Localization[JobType]}" Opacity="0.7"/>
-                        <TextBox Text="{Binding JobType}" IsReadOnly="True"/>
-                        <TextBlock Text="{Binding Localization[CronExpression]}" Opacity="0.7"/>
-                        <TextBox Text="{Binding CronExpression, Mode=TwoWay}" PlaceholderText="0 9 * * 1-5"/>
-                        <TextBlock Text="{Binding Localization[JobParameters]}" Opacity="0.7"/>
-                        <TextBox Text="{Binding ParametersJson, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
-                                 MinHeight="150" VerticalContentAlignment="Top" PlaceholderText="JSON parameters"/>
-                        <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}" Content="{Binding Localization[JobEnabled]}"/>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="{Binding Localization[LastRunAt]}" FontSize="11" Opacity="0.7"/>
-                                <TextBlock Text="{Binding SelectedJob.LastRunAtText}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Spacing="2">
-                                <TextBlock Text="{Binding Localization[NextRunAt]}" FontSize="11" Opacity="0.7"/>
-                                <TextBlock Text="{Binding SelectedJob.NextRunAtText}"/>
-                            </StackPanel>
-                        </Grid>
+                        <StackPanel IsVisible="{Binding IsJobSettingsVisible}" Spacing="10">
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right" Command="{Binding ShowJobDetailsCommand}" Padding="10,5">
+                                    <TextBlock Text="{Binding Localization[BackToJobDetails]}"/>
+                                </Button>
+                                <TextBlock Text="{Binding Localization[JobSettings]}" FontSize="16" FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding Localization[JobSettingsDescription]}" Opacity="0.7" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding Localization[JobMaxRuntime]}" Opacity="0.7"/>
+                            <TextBox Text="{Binding MaxJobRuntimeMinutes, Mode=TwoWay}" PlaceholderText="30"/>
+                            <TextBlock Text="{Binding Localization[JobMaxRuntimeDescription]}" FontSize="12" Opacity="0.65" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding IsJobDetailsVisible}" Spacing="10">
+                            <TextBlock Text="{Binding Localization[JobDetails]}" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Localization[JobId]}" Opacity="0.7"/>
+                            <TextBox Text="{Binding SelectedJob.Id}" IsReadOnly="True"/>
+                            <TextBlock Text="{Binding Localization[JobType]}" Opacity="0.7"/>
+                            <TextBox Text="{Binding JobType}" IsReadOnly="True"/>
+                            <TextBlock Text="{Binding Localization[CronExpression]}" Opacity="0.7"/>
+                            <TextBox Text="{Binding CronExpression, Mode=TwoWay}" PlaceholderText="0 9 * * 1-5"/>
+                            <TextBlock Text="{Binding Localization[JobParameters]}" Opacity="0.7"/>
+                            <TextBox Text="{Binding ParametersJson, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
+                                     MinHeight="150" VerticalContentAlignment="Top" PlaceholderText="JSON parameters"/>
+                            <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}" Content="{Binding Localization[JobEnabled]}"/>
+                            <CheckBox IsChecked="{Binding IsOneTime, Mode=TwoWay}" Content="{Binding Localization[JobOneTime]}"/>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding Localization[LastRunAt]}" FontSize="11" Opacity="0.7"/>
+                                    <TextBlock Text="{Binding SelectedJob.LastRunAtText}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="{Binding Localization[NextRunAt]}" FontSize="11" Opacity="0.7"/>
+                                    <TextBlock Text="{Binding SelectedJob.NextRunAtText}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

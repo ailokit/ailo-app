@@ -37,6 +37,21 @@ public sealed class CompositionTests : IDisposable
     }
 
     [Fact]
+    public async Task AppState_LoadsPersistedAccentColor()
+    {
+        using var services = new ServiceCollection().AddAiloApplication(new AppPaths(_root)).BuildServiceProvider();
+        services.InitializeAiloDatabase();
+
+        var settings = services.GetRequiredService<AppSettingsService>();
+        await settings.SaveAsync(AppSettingsService.AccentColorKey, "#EC4899");
+
+        var state = services.GetRequiredService<AppState>();
+        await state.LoadAsync();
+
+        Assert.Equal("#EC4899", state.AccentColorHex);
+    }
+
+    [Fact]
     public async Task ChatWorkspaceAndFileTools_AreIsolatedPerWindowScope()
     {
         using var services = new ServiceCollection().AddAiloApplication(new AppPaths(_root)).BuildServiceProvider();

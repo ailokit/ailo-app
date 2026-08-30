@@ -132,7 +132,7 @@
         <value>创建定时 Agent 任务</value>
     </data>
     <data name="ToolScheduleAgentJobDescription">
-        <value>创建使用 Docker 隔离工作目录的周期 Agent 任务。</value>
+        <value>创建使用本机 Shell 工作目录的周期 Agent 任务。</value>
     </data>
     <data name="ToolListScheduledJobs"><value>查看定时任务</value></data>
     <data name="ToolListScheduledJobsDescription"><value>查看所有可持久化的周期任务及其计划。</value></data>
@@ -160,12 +160,20 @@
     <data name="CronExpression"><value>Cron 表达式</value></data>
     <data name="JobParameters"><value>参数（JSON）</value></data>
     <data name="JobEnabled"><value>启用</value></data>
+    <data name="JobOneTime"><value>一次性任务</value></data>
     <data name="LastRunAt"><value>上次执行</value></data>
     <data name="NextRunAt"><value>下次执行</value></data>
     <data name="JobCronRequired"><value>请输入 Cron 表达式。</value></data>
     <data name="JobParametersRequired"><value>请输入 JSON 参数。</value></data>
     <data name="JobSaved"><value>定时任务已保存。</value></data>
     <data name="JobDeleted"><value>定时任务已删除。</value></data>
+    <data name="JobMaxRuntime"><value>任务最大运行时间（分钟）</value></data>
+    <data name="JobMaxRuntimeDescription"><value>每个定时任务超过此统一限制后会被取消。有效范围：1 至 1440 分钟。</value></data>
+    <data name="JobMaxRuntimeInvalid"><value>任务最大运行时间必须是 1 至 1440 之间的整数分钟。</value></data>
+    <data name="JobMaxRuntimeSaved"><value>任务最大运行时间已保存。</value></data>
+    <data name="JobSettings"><value>任务设置</value></data>
+    <data name="JobSettingsDescription"><value>配置定时任务共用的设置，修改后立即生效。</value></data>
+    <data name="BackToJobDetails"><value>返回任务详情</value></data>
     <data name="StartConversation">
         <value>开始会话</value>
     </data>
@@ -230,7 +238,7 @@
         <value>将当前所有数据复制到新目录，并覆盖其中已有文件；原目录数据会保留。</value>
     </data>
     <data name="ApplyDataDirectory">
-        <value>应用数据目录</value>
+        <value>应用</value>
     </data>
     <data name="SelectDataDirectory">
         <value>选择数据目录</value>
@@ -257,7 +265,7 @@
         <value>模型列表</value>
     </data>
     <data name="FetchModels">
-        <value>从 API 获取模型列表</value>
+        <value>获取模型</value>
     </data>
     <data name="FetchingModels">
         <value>正在获取模型列表…</value>
@@ -279,6 +287,9 @@
     </data>
     <data name="Save">
         <value>保存</value>
+    </data>
+    <data name="New">
+        <value>新建</value>
     </data>
     <data name="SkillManagement">
         <value>提示词管理</value>
@@ -369,9 +380,6 @@
     </data>
     <data name="AccentColorDescription">
         <value>选择预设颜色，或使用颜色选择器自定义 轻灵 的主题色。</value>
-    </data>
-    <data name="CustomAccentColor">
-        <value>自定义颜色</value>
     </data>
     <data name="About">
         <value>关于</value>
@@ -467,7 +475,7 @@
         <value>多模态</value>
     </data>
     <data name="AddModel">
-        <value>添加模型</value>
+        <value>添加</value>
     </data>
     <data name="AddImage">
         <value>添加图片</value>
@@ -557,7 +565,7 @@
         <value>工具列表</value>
     </data>
     <data name="RefreshMcpTools">
-        <value>刷新工具</value>
+        <value>刷新</value>
     </data>
     <data name="RefreshingMcpTools">
         <value>正在刷新工具…</value>

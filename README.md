@@ -11,7 +11,7 @@ Ailo is a native desktop AI workspace built with .NET 10 and Avalonia. It brings
 - Markdown, code blocks, images, clipboard attachments, and local SQLite conversation history.
 - Workspace boundaries that restrict file access and prevent path traversal or symlink escapes.
 - Optional webpage, system information, notification, workspace file, and MCP tools.
-- Persistent Cron-based agent jobs with Docker or Podman isolation for unattended shell execution.
+- Persistent Cron-based agent jobs with local-shell execution confined to their working directory.
 - English, Simplified Chinese, and Traditional Chinese user interfaces.
 
 ## Getting started
@@ -21,7 +21,6 @@ Ailo is a native desktop AI workspace built with .NET 10 and Avalonia. It brings
 - .NET SDK 10.0 or later.
 - A desktop environment supported by Avalonia.
 - Provider credentials or a locally running Ollama instance.
-- Docker or Podman is required only for scheduled agent jobs that use shell access.
 
 ```bash
 dotnet restore Ailo.slnx
@@ -42,7 +41,8 @@ After launching Ailo, add a model provider in Settings, then select a model and 
 
 Scheduled agents are intended for recurring reports, checks, and project maintenance. Each job has an explicit Cron expression, prompt, and working directory.
 
-- Shell access for scheduled agents is provided only through Docker or Podman and is confined to the mounted working directory.
+- Shell access for scheduled agents uses the local shell and is confined to the working directory. If no directory is supplied, Ailo selects the configured default workspace when the job runs.
+- Scheduled jobs can be marked as one-time tasks; they are removed automatically after execution. The default is recurring.
 - Scheduled agents cannot ask interactive questions.
 - Job progress and errors are appended to `ailo-agent-job-<id>.log` in the working directory.
 

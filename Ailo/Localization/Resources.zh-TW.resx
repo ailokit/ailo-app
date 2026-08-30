@@ -132,7 +132,7 @@
         <value>建立排程 Agent 工作</value>
     </data>
     <data name="ToolScheduleAgentJobDescription">
-        <value>建立使用 Docker 隔離工作目錄的週期 Agent 工作。</value>
+        <value>建立使用本機 Shell 工作目錄的週期 Agent 工作。</value>
     </data>
     <data name="ToolListScheduledJobs"><value>檢視排程工作</value></data>
     <data name="ToolListScheduledJobsDescription"><value>檢視所有可持久化的週期工作及其排程。</value></data>
@@ -160,12 +160,20 @@
     <data name="CronExpression"><value>Cron 表達式</value></data>
     <data name="JobParameters"><value>參數（JSON）</value></data>
     <data name="JobEnabled"><value>啟用</value></data>
+    <data name="JobOneTime"><value>一次性工作</value></data>
     <data name="LastRunAt"><value>上次執行</value></data>
     <data name="NextRunAt"><value>下次執行</value></data>
     <data name="JobCronRequired"><value>請輸入 Cron 表達式。</value></data>
     <data name="JobParametersRequired"><value>請輸入 JSON 參數。</value></data>
     <data name="JobSaved"><value>排程工作已儲存。</value></data>
     <data name="JobDeleted"><value>排程工作已刪除。</value></data>
+    <data name="JobMaxRuntime"><value>工作最大執行時間（分鐘）</value></data>
+    <data name="JobMaxRuntimeDescription"><value>每個排程工作超過此共用限制後會被取消。有效範圍：1 至 1440 分鐘。</value></data>
+    <data name="JobMaxRuntimeInvalid"><value>工作最大執行時間必須是 1 至 1440 之間的整數分鐘。</value></data>
+    <data name="JobMaxRuntimeSaved"><value>工作最大執行時間已儲存。</value></data>
+    <data name="JobSettings"><value>工作設定</value></data>
+    <data name="JobSettingsDescription"><value>設定排程工作共用的選項，修改後立即生效。</value></data>
+    <data name="BackToJobDetails"><value>返回工作詳細資料</value></data>
     <data name="StartConversation">
         <value>開始對話</value>
     </data>
@@ -230,7 +238,7 @@
         <value>將目前所有資料複製到新目錄，並覆寫其中已有檔案；原目錄資料會保留。</value>
     </data>
     <data name="ApplyDataDirectory">
-        <value>套用資料目錄</value>
+        <value>套用</value>
     </data>
     <data name="SelectDataDirectory">
         <value>選擇資料目錄</value>
@@ -257,7 +265,7 @@
         <value>模型清單</value>
     </data>
     <data name="FetchModels">
-        <value>從 API 獲取模型清單</value>
+        <value>取得模型</value>
     </data>
     <data name="FetchingModels">
         <value>正在獲取模型清單…</value>
@@ -279,6 +287,9 @@
     </data>
     <data name="Save">
         <value>儲存</value>
+    </data>
+    <data name="New">
+        <value>新增</value>
     </data>
     <data name="SkillManagement">
         <value>提示詞管理</value>
@@ -366,9 +377,6 @@
     </data>
     <data name="AccentColorDescription">
         <value>選擇預設顏色，或使用顏色選擇器自訂 轻灵 的主題色。</value>
-    </data>
-    <data name="CustomAccentColor">
-        <value>自訂顏色</value>
     </data>
     <data name="About">
         <value>關於</value>
@@ -464,7 +472,7 @@
         <value>多模態</value>
     </data>
     <data name="AddModel">
-        <value>新增模型</value>
+        <value>新增</value>
     </data>
     <data name="AddImage">
         <value>新增圖片</value>
@@ -542,7 +550,7 @@
         <value>工具清單</value>
     </data>
     <data name="RefreshMcpTools">
-        <value>重新整理工具</value>
+        <value>重新整理</value>
     </data>
     <data name="RefreshingMcpTools">
         <value>正在重新整理工具…</value>

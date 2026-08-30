@@ -101,6 +101,9 @@ public sealed partial class AppState : ObservableObject
             ThemeKey = await AppSettingsService.GetAsync(AppSettingsService.ThemeKey, cancellationToken)
                                   .ConfigureAwait(false)
                               ?? AppSettingsService.DefaultTheme;
+            AccentColorHex = await AppSettingsService.GetAsync(AppSettingsService.AccentColorKey, cancellationToken)
+                                  .ConfigureAwait(false)
+                              ?? AppSettingsService.DefaultAccentColor;
             LanguageKey = await AppSettingsService.GetAsync(AppSettingsService.LanguageKey, cancellationToken)
                                      .ConfigureAwait(false)
                                  ?? AppSettingsService.DefaultLanguage;

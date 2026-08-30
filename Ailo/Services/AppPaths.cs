@@ -21,6 +21,8 @@ public sealed class AppPaths
 
     public string AttachmentsDirectory => Path.Combine(ApplicationDataDirectory, "attachments");
 
+    public string DefaultWorkspaceDirectory => Path.Combine(ApplicationDataDirectory, "default-workspace");
+
     public static AppPaths CreateDefault()
     {
         var configuration = DataDirectoryConfiguration.CreateDefault();
@@ -42,5 +44,6 @@ public sealed class AppPaths
         Directory.CreateDirectory(LogsDirectory);
         Directory.CreateDirectory(ExportsDirectory);
         Directory.CreateDirectory(AttachmentsDirectory);
+        Directory.CreateDirectory(DefaultWorkspaceDirectory);
     }
 }
