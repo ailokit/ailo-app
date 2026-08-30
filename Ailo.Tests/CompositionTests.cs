@@ -1,4 +1,5 @@
 using Ailo.Composition;
+using Ailo.AI.Skills;
 using Ailo.AI.Tools;
 using Ailo.Data;
 using Ailo.Jobs;
@@ -23,7 +24,9 @@ public sealed class CompositionTests : IDisposable
         Assert.NotNull(services.GetRequiredService<StartupRecoveryService>());
         Assert.NotNull(services.GetRequiredService<CronJobRepository>());
         Assert.NotNull(services.GetRequiredService<CronJobScheduler>());
+        Assert.NotNull(services.GetRequiredService<AgentSkillsService>());
         Assert.True(File.Exists(Path.Combine(_root, "ailo.db")));
+        Assert.True(Directory.Exists(Path.Combine(_root, "skills")));
     }
 
     [Fact]

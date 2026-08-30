@@ -4,6 +4,7 @@ using System.Text.Json;
 using Ailo.AI.Conversations;
 using Ailo.AI.Mcp;
 using Ailo.AI.Providers;
+using Ailo.AI.Skills;
 using Ailo.AI.Tools;
 using Ailo.Data;
 using Ailo.Logging;
@@ -27,6 +28,7 @@ public sealed class ChatService(
     SessionRunLock sessionLock,
     ChatToolRegistry toolRegistry,
     ChatWorkspace workspace,
+    AgentSkillsService? agentSkills = null,
     McpClientService? mcpClientService = null,
     ShellToolConfiguration? shellToolConfiguration = null) : IAsyncDisposable
 {
@@ -336,6 +338,9 @@ public sealed class ChatService(
 
         var apiKey = string.IsNullOrWhiteSpace(provider.ApiKey) ? "ollama" : provider.ApiKey;
         var client = new OpenAIClient(new ApiKeyCredential(apiKey), options).GetChatClient(provider.ModelId);
+        var agentSkillsSource = agentSkills is null
+            ? null
+            : await agentSkills.CreateSourceAsync().ConfigureAwait(false);
 
         var tools = (await toolRegistry.GetTools(enabledToolNames).ConfigureAwait(false)).ToList();
         if (shellSession is not null)
@@ -383,10 +388,20 @@ public sealed class ChatService(
                 ]
             },
             AIContextProviders = shellSession is null ? null : [shellSession.EnvironmentProvider],
+            // The source contains one root per enabled SKILL.md directory. This keeps disabled
+            // skills out of the framework's discovery pass rather than merely hiding them in UI.
+            AgentSkillsSource = agentSkillsSource,
+            DisableAgentSkillsProvider = agentSkillsSource is null,
+            // Skills are configured from local, user-controlled directories. Approve only the
+            // framework's load/read/run skill tools so a skill script can execute without an
+            // interactive approval round; Ailo's unrelated tools keep their existing behavior.
+            ToolApprovalAgentOptions = new ToolApprovalAgentOptions
+            {
+                AutoApprovalRules = [AgentSkillsProvider.AllToolsAutoApprovalRule]
+            },
             // Ailo exposes its own path-authorized file tools. Keep the harness file
             // memory disabled so it cannot create a second, broader file-access route.
             DisableFileMemory = true,
-            DisableAgentSkillsProvider = true,
             DisableWebSearch = true,
             // The framework's compaction state is not serializable by the current
             // Agent Framework JSON context. Disable it so a completed turn can

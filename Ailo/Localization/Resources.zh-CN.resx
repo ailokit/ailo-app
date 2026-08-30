@@ -27,6 +27,18 @@
     <data name="Skills">
         <value>提示词</value>
     </data>
+    <data name="AgentSkills"><value>技能</value></data>
+    <data name="AgentSkillsTitle"><value>Agent 技能</value></data>
+    <data name="AgentSkillsDescription"><value>自动扫描 Ailo 数据目录及支持的智能体全局目录中的技能。启用的技能可用于聊天和定时 Agent Job；Agent 需要时可执行技能自带脚本。</value></data>
+    <data name="AgentSkillsScripts"><value>支持脚本执行</value></data>
+    <data name="AgentSkillsEmpty"><value>未在已配置目录中找到有效的 SKILL.md 技能包。</value></data>
+    <data name="AgentSkillsSaved"><value>技能可用状态已自动保存。</value></data>
+    <data name="AgentSkillsEnabled"><value>启用</value></data>
+    <data name="AgentSkillsSource"><value>来源</value></data>
+    <data name="AgentSkillsSourcePath"><value>来源目录</value></data>
+    <data name="AgentSkillsSkillPath"><value>技能文件</value></data>
+    <data name="AgentSkillsNoScripts"><value>没有可执行脚本</value></data>
+    <data name="Refresh"><value>刷新</value></data>
     <data name="Tools">
         <value>工具</value>
     </data>

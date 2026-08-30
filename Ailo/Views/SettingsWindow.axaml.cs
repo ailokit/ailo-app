@@ -80,6 +80,7 @@ internal partial class SettingsWindow : Window
             SettingsWindowViewModel.GeneralSettingsPage => CreatePage<GeneralSettingsView, GeneralSettingsViewModel>(vm => vm.LoadAsync()),
             SettingsWindowViewModel.ApiKeySettingsPage => CreatePage<ApiKeySettingsView, ApiKeySettingsViewModel>(vm => vm.LoadAsync()),
             SettingsWindowViewModel.SkillsSettingsPage => CreatePage<SkillSettingsView, SkillSettingsViewModel>(vm => vm.LoadAsync()),
+            SettingsWindowViewModel.AgentSkillsSettingsPage => CreatePage<AgentSkillsSettingsView, AgentSkillsSettingsViewModel>(vm => vm.LoadAsync()),
             SettingsWindowViewModel.ToolsSettingsPage => CreatePage<ToolSettingsView, ToolSettingsViewModel>(vm => vm.LoadAsync()),
             SettingsWindowViewModel.McpSettingsPage => CreatePage<McpSettingsView, McpSettingsViewModel>(vm => vm.LoadAsync()),
             SettingsWindowViewModel.ShortcutSettingsPage => CreatePage<ShortcutSettingsView, ShortcutSettingsViewModel>(vm => { vm.LoadFromState(); return Task.CompletedTask; }),

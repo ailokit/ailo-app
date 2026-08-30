@@ -33,6 +33,18 @@
     <data name="Skills">
         <value>Prompts</value>
     </data>
+    <data name="AgentSkills"><value>Skills</value></data>
+    <data name="AgentSkillsTitle"><value>Agent Skills</value></data>
+    <data name="AgentSkillsDescription"><value>Skills are discovered from Ailo data and supported agent global directories. Enabled skills are available to chat and scheduled agent jobs; skill scripts can run when requested by the agent.</value></data>
+    <data name="AgentSkillsScripts"><value>Scripts enabled</value></data>
+    <data name="AgentSkillsEmpty"><value>No valid SKILL.md packages were found in the configured directories.</value></data>
+    <data name="AgentSkillsSaved"><value>Skill availability is saved automatically.</value></data>
+    <data name="AgentSkillsEnabled"><value>Enabled</value></data>
+    <data name="AgentSkillsSource"><value>Source</value></data>
+    <data name="AgentSkillsSourcePath"><value>Source path</value></data>
+    <data name="AgentSkillsSkillPath"><value>Skill file</value></data>
+    <data name="AgentSkillsNoScripts"><value>No executable scripts</value></data>
+    <data name="Refresh"><value>Refresh</value></data>
     <data name="Tools">
         <value>Tools</value>
     </data>

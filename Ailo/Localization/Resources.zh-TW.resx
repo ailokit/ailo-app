@@ -27,6 +27,18 @@
     <data name="Skills">
         <value>提示詞</value>
     </data>
+    <data name="AgentSkills"><value>技能</value></data>
+    <data name="AgentSkillsTitle"><value>Agent 技能</value></data>
+    <data name="AgentSkillsDescription"><value>自動掃描 Ailo 資料目錄及支援的智慧體全域目錄中的技能。啟用的技能可用於對話和排程 Agent Job；Agent 需要時可執行技能自帶指令碼。</value></data>
+    <data name="AgentSkillsScripts"><value>支援指令碼執行</value></data>
+    <data name="AgentSkillsEmpty"><value>未在已設定目錄中找到有效的 SKILL.md 技能包。</value></data>
+    <data name="AgentSkillsSaved"><value>技能可用狀態已自動儲存。</value></data>
+    <data name="AgentSkillsEnabled"><value>啟用</value></data>
+    <data name="AgentSkillsSource"><value>來源</value></data>
+    <data name="AgentSkillsSourcePath"><value>來源目錄</value></data>
+    <data name="AgentSkillsSkillPath"><value>技能檔案</value></data>
+    <data name="AgentSkillsNoScripts"><value>沒有可執行指令碼</value></data>
+    <data name="Refresh"><value>重新整理</value></data>
     <data name="Tools">
         <value>工具</value>
     </data>

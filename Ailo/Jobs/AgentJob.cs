@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ailo.AI.Providers;
+using Ailo.AI.Skills;
 using Ailo.AI.Tools;
 using Ailo.Services;
 using Microsoft.Agents.AI;
@@ -99,6 +100,8 @@ public sealed class AgentJob(
             scope.ServiceProvider.GetRequiredService<ChatWorkspace>()
                 .Replace([new WorkspaceEntry(workspaceDirectory, IsDirectory: true)]);
             var toolRegistry = scope.ServiceProvider.GetRequiredService<ChatToolRegistry>();
+            var agentSkillsSource = await scope.ServiceProvider.GetRequiredService<AgentSkillsService>()
+                .CreateSourceAsync(cancellationToken).ConfigureAwait(false);
             var tools = (await toolRegistry.GetRegistrations().ConfigureAwait(false))
                 .Where(registration => !WorkspaceFileToolNames.Contains(registration.Name))
                 .Select(registration => registration.Tool)
@@ -134,6 +137,12 @@ public sealed class AgentJob(
                     Reasoning = new ReasoningOptions { Output = ReasoningOutput.Full }
                 },
                 AIContextProviders = [shellSession.EnvironmentProvider],
+                AgentSkillsSource = agentSkillsSource,
+                DisableAgentSkillsProvider = agentSkillsSource is null,
+                ToolApprovalAgentOptions = new ToolApprovalAgentOptions
+                {
+                    AutoApprovalRules = [AgentSkillsProvider.AllToolsAutoApprovalRule]
+                },
                 // Scheduled jobs have no interactive user to answer planning questions. Expose only
                 // the execute mode and omit the todo provider used for interactive multi-step plans.
                 AgentModeProviderOptions = new AgentModeProviderOptions
@@ -143,7 +152,6 @@ public sealed class AgentJob(
                 },
                 DisableTodoProvider = true,
                 DisableFileMemory = true,
-                DisableAgentSkillsProvider = true,
                 DisableWebSearch = true,
                 DisableCompaction = true,
                 MaxContextWindowTokens = 128_000,

@@ -12,6 +12,7 @@ public partial class AppState
 {
     private ProviderService ProviderService => _lazyServiceProvider.GetRequiredService<ProviderService>();
     private SkillRepository SkillRepository => _lazyServiceProvider.GetRequiredService<SkillRepository>();
+    private AgentSkillsService AgentSkillsService => _lazyServiceProvider.GetRequiredService<AgentSkillsService>();
 
     private ConversationRepository ConversationRepository =>
         _lazyServiceProvider.GetRequiredService<ConversationRepository>();
@@ -28,6 +29,7 @@ public partial class AppState
     {
         await ReloadAiProvidersAsync(cancellationToken);
         await ReloadAiSkillsAsync(cancellationToken);
+        await AgentSkillsService.RefreshAsync(cancellationToken);
     }
 
     public async Task ReloadAiProvidersAsync(CancellationToken cancellationToken = default)

@@ -21,6 +21,12 @@ public sealed class AppPaths
 
     public string AttachmentsDirectory => Path.Combine(ApplicationDataDirectory, "attachments");
 
+    /// <summary>Root for portable, file-based Agent Skills owned by this application.</summary>
+    public string SkillsDirectory => Path.Combine(ApplicationDataDirectory, "skills");
+
+    /// <summary>Stores only local skill availability overrides; skill definitions always come from disk.</summary>
+    public string SkillsAvailabilityPath => Path.Combine(ApplicationDataDirectory, "skills-availability.json");
+
     public string DefaultWorkspaceDirectory => Path.Combine(ApplicationDataDirectory, "default-workspace");
 
     public static AppPaths CreateDefault()
@@ -44,6 +50,7 @@ public sealed class AppPaths
         Directory.CreateDirectory(LogsDirectory);
         Directory.CreateDirectory(ExportsDirectory);
         Directory.CreateDirectory(AttachmentsDirectory);
+        Directory.CreateDirectory(SkillsDirectory);
         Directory.CreateDirectory(DefaultWorkspaceDirectory);
     }
 }

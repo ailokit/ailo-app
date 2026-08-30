@@ -13,6 +13,7 @@ public sealed partial class SettingsWindowViewModel : ViewModelBase
     public const string GeneralSettingsPage = "general";
     public const string ApiKeySettingsPage = "api-key";
     public const string SkillsSettingsPage = "skills";
+    public const string AgentSkillsSettingsPage = "agent-skills";
     public const string ToolsSettingsPage = "tools";
     public const string McpSettingsPage = "mcp";
     public const string ShortcutSettingsPage = "shortcut";

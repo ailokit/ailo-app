@@ -35,9 +35,10 @@
         </Border>
         <Grid Grid.Row="1" ColumnDefinitions="auto,*">
             <Border Padding="16">
-                <StackPanel Width="120" Spacing="10">
+                <Grid Width="120" RowDefinitions="Auto,*" RowSpacing="10">
                     <TextBlock Text="{Binding Localization[Settings]}" FontSize="20" FontWeight="Bold" Margin="0,0,0,12"/>
-                    <Border Classes="settings-navigation-menu">
+                    <Border Grid.Row="1" Classes="settings-navigation-menu">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <ListBox x:Name="SettingsNavigation" SelectionMode="Single"
                                  SelectionChanged="OnSettingsSelectionChanged" CornerRadius="{DynamicResource CornerRadiusCompact}">
                         <ListBoxItem Tag="general" HorizontalContentAlignment="Stretch" Padding="8">
@@ -70,6 +71,12 @@
                                 <TextBlock Text="{Binding Localization[Skills]}"/>
                             </StackPanel>
                         </ListBoxItem>
+                        <ListBoxItem Tag="agent-skills" HorizontalContentAlignment="Stretch" Padding="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="LightbulbOnOutline" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding Localization[AgentSkills]}"/>
+                            </StackPanel>
+                        </ListBoxItem>
                         <ListBoxItem Tag="tools" HorizontalContentAlignment="Stretch" Padding="8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <materialIcons:MaterialIcon Kind="WrenchOutline" Width="18" Height="18"/>
@@ -95,8 +102,9 @@
                             </StackPanel>
                         </ListBoxItem>
                         </ListBox>
+                        </ScrollViewer>
                     </Border>
-                </StackPanel>
+                </Grid>
             </Border>
             <ContentControl x:Name="SettingsContent" Grid.Column="1" Margin="0,24,24,24"/>
         </Grid>
