@@ -2,6 +2,7 @@ using Ailo.AI.Conversations;
 using Ailo.AI;
 using Ailo.ViewModels;
 using Ailo.Views;
+using LiveMarkdown.Avalonia;
 using Markdig;
 using Markdig.Syntax;
 
@@ -10,12 +11,24 @@ namespace Ailo.Tests;
 public sealed class ChatMessageViewModelTests
 {
     [Fact]
-    public void ThinkingBlock_UsesCompactMaterialIconAndDoesNotDependOnExpanderTemplate()
+    public void ThinkingFence_UsesItsOwnMarkdigBlockType_WhileCodeFencesRemainRegularCodeBlocks()
     {
-        const string markdown = "````thinking\nAnalyze the request\n````\n";
-        var parsed = Markdown.Parse(markdown);
-        var fencedBlock = Assert.IsType<FencedCodeBlock>(Assert.Single(parsed));
-        Assert.Equal("thinking", fencedBlock.Info?.ToString().Trim());
+        const string markdown = "````thinking\nAnalyze the request\n````\n```java\nclass Example {}\n```\n";
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .UseCodeBlockSpanFixer()
+            .UseThinkingBlocks()
+            .Build();
+        var parsed = Markdown.Parse(markdown, pipeline);
+
+        Assert.IsType<ThinkingCodeBlock>(parsed[0]);
+        Assert.IsType<FencedCodeBlock>(parsed[1]);
+        Assert.IsNotType<ThinkingCodeBlock>(parsed[1]);
+        Assert.Equal("java", ((FencedCodeBlock)parsed[1]).Info?.ToString().Trim());
+
+        var nodeBaseType = typeof(ThinkingBlockNode).BaseType;
+        Assert.NotNull(nodeBaseType);
+        Assert.Equal(typeof(ThinkingCodeBlock), Assert.Single(nodeBaseType.GetGenericArguments()));
 
         var indicatorField = typeof(ThinkingBlockControl).GetField(
             "_indicator",

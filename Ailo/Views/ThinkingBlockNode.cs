@@ -3,14 +3,13 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using LiveMarkdown.Avalonia;
-using Markdig.Syntax;
 using Material.Icons;
 using Material.Icons.Avalonia;
 
 namespace Ailo.Views;
 
 /// <summary>Renders each ordered <c>thinking</c> fence as an independently collapsible block.</summary>
-public sealed class ThinkingBlockNode : BlockNode<FencedCodeBlock>
+public sealed class ThinkingBlockNode : BlockNode<ThinkingCodeBlock>
 {
     private readonly ObservableStringBuilder _builder = new();
     private readonly MarkdownRenderer _renderer;
@@ -34,12 +33,9 @@ public sealed class ThinkingBlockNode : BlockNode<FencedCodeBlock>
         };
     }
 
-    protected override bool MatchesBlock(FencedCodeBlock block) =>
-        string.Equals(block.Info?.Trim(), "thinking", StringComparison.OrdinalIgnoreCase);
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        FencedCodeBlock block,
+        ThinkingCodeBlock block,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {

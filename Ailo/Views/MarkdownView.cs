@@ -45,10 +45,12 @@ public sealed class MarkdownView : UserControl
         }
 
         MarkdownNode.Register<ThinkingBlockNode>();
-        MarkdownRenderer.ConfigurePipeline += builder => builder.UseAutoLinks(new AutoLinkOptions
-        {
-            UseHttpsForWWWLinks = true
-        });
+        MarkdownRenderer.ConfigurePipeline += builder => builder
+            .UseThinkingBlocks()
+            .UseAutoLinks(new AutoLinkOptions
+            {
+                UseHttpsForWWWLinks = true
+            });
     }
 
     private static int _pipelineConfigured;
