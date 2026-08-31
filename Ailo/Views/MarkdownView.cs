@@ -7,7 +7,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Ailo.AI;
@@ -15,7 +14,6 @@ using Ailo.Logging;
 using LiveMarkdown.Avalonia;
 using Markdig;
 using Markdig.Extensions.AutoLinks;
-using TextMateSharp.Grammars;
 
 namespace Ailo.Views;
 
@@ -59,12 +57,10 @@ public sealed class MarkdownView : UserControl
     {
         _renderer = new MarkdownRenderer
         {
-            MarkdownBuilder = _builder,
-            CodeBlockColorTheme = ThemeName.LightPlus
+            MarkdownBuilder = _builder
         };
         _renderer.LinkClick += OnLinkClick;
         Content = _renderer;
-        ActualThemeVariantChanged += OnActualThemeVariantChanged;
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel, true);
     }
 
@@ -155,13 +151,6 @@ public sealed class MarkdownView : UserControl
         var endFragment = startFragment + Encoding.UTF8.GetByteCount(fragment);
         var endHtml = endFragment + Encoding.UTF8.GetByteCount(end);
         return string.Format(CultureInfo.InvariantCulture, headerTemplate, startHtml, endHtml, startFragment, endFragment) + start + fragment + end;
-    }
-
-    private void OnActualThemeVariantChanged(object? sender, EventArgs e)
-    {
-        _renderer.CodeBlockColorTheme = ActualThemeVariant == ThemeVariant.Dark
-            ? ThemeName.DarkPlus
-            : ThemeName.LightPlus;
     }
 
     private static void OnLinkClick(object? sender, LinkClickedEventArgs e)
