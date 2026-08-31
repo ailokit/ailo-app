@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ailo.AI.Conversations;
+using Ailo.AI.Tools;
 using Ailo.Services;
 using Microsoft.Agents.AI;
 
@@ -11,6 +12,8 @@ namespace Ailo.AI;
 [JsonSerializable(typeof(MessageAttachment[]))]
 [JsonSerializable(typeof(string[]))]
 [JsonSerializable(typeof(AgentRequestMessageSourceAttribution))]
+[JsonSerializable(typeof(NotificationType))]
+[JsonSerializable(typeof(SystemInformationType))]
 internal sealed partial class AiloJsonSerializerContext : JsonSerializerContext;
 
 internal static class AiloJsonSerializerOptions

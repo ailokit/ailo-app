@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using Ailo.AI;
 
 namespace Ailo.AI.Tools;
 
@@ -107,6 +108,7 @@ public class DefaultToolProvider : IChatToolProvider
                 new AIFunctionFactoryOptions
                 {
                     Name = "schedule_notification",
+                    SerializerOptions = AiloJsonSerializerOptions.AgentSession,
                     Description =
                         "Creates a persistent recurring notification in the user's local time. Choose Native for an operating-system notification, or TopmostWindow for a user-dismissible always-on-top Ailo window whose body supports Markdown. Use five cron fields (minute hour day-of-month month day-of-week), such as '0 9 * * 1-5', or use six fields with seconds first for sub-minute schedules, such as '*/10 * * * * *' for every 10 seconds."
                 }),
@@ -130,6 +132,7 @@ public class DefaultToolProvider : IChatToolProvider
                 new AIFunctionFactoryOptions
                 {
                     Name = "show_notification",
+                    SerializerOptions = AiloJsonSerializerOptions.AgentSession,
                     Description = "Sends an immediate notification. Choose Native for an operating-system notification, or TopmostWindow for an always-on-top Ailo window whose body supports Markdown."
                 }),
             formatNotice: toolCall =>
@@ -152,6 +155,7 @@ public class DefaultToolProvider : IChatToolProvider
                 new AIFunctionFactoryOptions
                 {
                     Name = "get_system_information",
+                    SerializerOptions = AiloJsonSerializerOptions.AgentSession,
                     Description = "Gets a selected local-system detail. Choose CurrentTime for local time and time zone, OperatingSystem for system and architecture details, or CurrentUser for the signed-in user."
                 }),
             formatNotice: _ => "Getting system information...");

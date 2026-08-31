@@ -1,5 +1,7 @@
+using Ailo.AI;
 using Ailo.AI.Tools;
 using Ailo.Services;
+using Microsoft.Extensions.AI;
 
 namespace Ailo.Tests;
 
@@ -23,6 +25,23 @@ public sealed class SystemNotificationToolTests
         var tool = new SystemNotificationTool(new FakeNotificationService());
 
         await Assert.ThrowsAsync<ArgumentException>(() => tool.ShowNotificationAsync("Title", " "));
+    }
+
+    [Fact]
+    public void CreatesNotificationFunctionWithSourceGeneratedEnumMetadata()
+    {
+        var tool = new SystemNotificationTool(new FakeNotificationService());
+
+        var function = AIFunctionFactory.Create(
+            tool.ShowNotificationAsync,
+            new AIFunctionFactoryOptions
+            {
+                SerializerOptions = AiloJsonSerializerOptions.AgentSession
+            });
+
+        Assert.Contains("notificationType", function.JsonSchema.GetRawText());
+        Assert.Contains("Native", function.JsonSchema.GetRawText());
+        Assert.Contains("TopmostWindow", function.JsonSchema.GetRawText());
     }
 
     private sealed class FakeNotificationService : INotificationService
