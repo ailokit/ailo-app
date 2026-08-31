@@ -11,6 +11,39 @@ namespace Ailo.Tests;
 public sealed class ChatMessageViewModelTests
 {
     [Fact]
+    public void StreamingResponseBuffer_CoalescesLongTokenStreamsWithoutLosingContent()
+    {
+        var buffer = new StreamingResponseBuffer();
+        var updateCount = 0;
+        for (var index = 0; index < 5_000; index++)
+        {
+            buffer.AppendReasoning("r");
+            if (buffer.ShouldFlush)
+            {
+                updateCount += buffer.Drain().Updates.Count;
+            }
+        }
+
+        buffer.AppendText("Answer");
+        for (var index = 0; index < 5_000; index++)
+        {
+            buffer.AppendText("t");
+            if (buffer.ShouldFlush)
+            {
+                updateCount += buffer.Drain().Updates.Count;
+            }
+        }
+
+        var (content, updates) = buffer.Drain();
+
+        Assert.Contains("````thinking\n" + new string('r', 5_000), content);
+        Assert.EndsWith("Answer" + new string('t', 5_000), content);
+        Assert.Equal(6, updateCount + updates.Count);
+        Assert.Single(updates);
+        Assert.Equal(ChatStreamUpdateKind.Text, updates[0].Kind);
+    }
+
+    [Fact]
     public void ThinkingFence_UsesItsOwnMarkdigBlockType_WhileCodeFencesRemainRegularCodeBlocks()
     {
         const string markdown = "````thinking\nAnalyze the request\n````\n```java\nclass Example {}\n```\n";

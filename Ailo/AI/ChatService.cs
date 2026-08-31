@@ -37,6 +37,7 @@ public sealed class ChatService(
     // than the framework default of 40 tool rounds. Keep a finite guardrail while allowing a
     // task to complete its inspection and verification loop.
     private const int MaximumToolIterationsPerRequest = 128;
+    private static readonly TimeSpan StreamUpdateFlushInterval = TimeSpan.FromMilliseconds(50);
     private readonly Dictionary<string, ShellToolSession> _shellSessions = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _shellSessionsGate = new(1, 1);
 
@@ -107,6 +108,7 @@ public sealed class ChatService(
         await messages.AppendAsync(new Message(assistantMessageId, conversationId, userSequenceNo + 1, MessageRole.Assistant, string.Empty, MessageStatus.Streaming, null, null, now, now), cancellationToken).ConfigureAwait(false);
 
         var content = string.Empty;
+        var responseBuffer = new StreamingResponseBuffer();
         var activeToolCalls = new Dictionary<string, string>(StringComparer.Ordinal);
         AIAgent agent;
         AgentSession session;
@@ -175,25 +177,56 @@ public sealed class ChatService(
         try
         {
             await using var updates = agent.RunStreamingAsync(chatMessage, session, cancellationToken: cancellationToken).GetAsyncEnumerator(cancellationToken);
+            var nextUpdateTask = updates.MoveNextAsync().AsTask();
             while (true)
             {
-                bool hasNext;
+                var flushPending = false;
+                var hasNext = false;
                 try
                 {
-                    hasNext = await updates.MoveNextAsync().ConfigureAwait(false);
+                    // Coalesce token-sized chunks, but do not make a slow provider wait for the
+                    // character threshold before the user sees its first response.
+                    if (responseBuffer.HasPendingUpdates && !responseBuffer.ShouldFlush)
+                    {
+                        var completedTask = await Task.WhenAny(nextUpdateTask, Task.Delay(StreamUpdateFlushInterval)).ConfigureAwait(false);
+                        if (completedTask != nextUpdateTask)
+                        {
+                            flushPending = true;
+                        }
+                    }
+
+                    if (!flushPending)
+                    {
+                        hasNext = await nextUpdateTask.ConfigureAwait(false);
+                    }
                 }
                 catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
                 {
                     const string cancellationMessage = "The response was cancelled.";
                     ExceptionLogger.Log(exception, nameof(ChatService), "Chat response was cancelled", LogLevel.Information);
+                    content = GetBufferedContent(responseBuffer, content);
                     content = await PersistTerminalMessageAsync(assistantMessageId, content, MessageStatus.Cancelled, "cancelled", cancellationMessage).ConfigureAwait(false);
                     throw;
                 }
                 catch (Exception exception)
                 {
                     ExceptionLogger.Log(exception, nameof(ChatService), "Chat provider streaming failed");
+                    content = GetBufferedContent(responseBuffer, content);
                     content = await PersistTerminalMessageAsync(assistantMessageId, content, MessageStatus.Failed, "provider_error", exception.Message).ConfigureAwait(false);
                     throw;
+                }
+
+                if (flushPending)
+                {
+                    var pending = responseBuffer.Drain();
+                    content = pending.Content;
+                    await messages.UpdateContentAndStatusAsync(assistantMessageId, content, MessageStatus.Streaming, cancellationToken: CancellationToken.None).ConfigureAwait(false);
+                    foreach (var pendingUpdate in pending.Updates)
+                    {
+                        yield return pendingUpdate;
+                    }
+
+                    continue;
                 }
 
                 if (!hasNext)
@@ -208,9 +241,7 @@ public sealed class ChatService(
                     switch (item)
                     {
                         case TextReasoningContent reasoningContent when !string.IsNullOrEmpty(reasoningContent.Text):
-                            content = ThinkingMarkdown.AppendReasoning(content, reasoningContent.Text);
-                            await messages.UpdateContentAndStatusAsync(assistantMessageId, content, MessageStatus.Streaming, cancellationToken: CancellationToken.None).ConfigureAwait(false);
-                            yield return ChatStreamUpdate.Reasoning(reasoningContent.Text);
+                            responseBuffer.AppendReasoning(reasoningContent.Text);
                             break;
 
                         case FunctionCallContent toolCall:
@@ -230,6 +261,7 @@ public sealed class ChatService(
                             catch (Exception exception)
                             {
                                 ExceptionLogger.Log(exception, nameof(ChatService), "Chat tool result could not be formatted");
+                                content = GetBufferedContent(responseBuffer, content);
                                 content = await PersistTerminalMessageAsync(assistantMessageId, content, MessageStatus.Failed, "tool_error", exception.Message).ConfigureAwait(false);
                                 throw;
                             }
@@ -237,37 +269,54 @@ public sealed class ChatService(
                             toolNotice = toolNotice.Trim();
                             if (toolNotice.Length > 0)
                             {
-                                content = ThinkingMarkdown.AppendToolBlock(content, toolNotice);
-                                await messages.UpdateContentAndStatusAsync(assistantMessageId, content, MessageStatus.Streaming, cancellationToken: CancellationToken.None).ConfigureAwait(false);
-                                yield return ChatStreamUpdate.ToolStarted(toolCall.CallId, toolNotice);
+                                responseBuffer.AppendToolStarted(toolCall.CallId, toolNotice);
                             }
 
                             break;
 
                         case FunctionResultContent toolResult when activeToolCalls.Remove(toolResult.CallId):
-                            yield return ChatStreamUpdate.ToolCompleted(toolResult.CallId);
+                            responseBuffer.AppendToolCompleted(toolResult.CallId);
                             break;
 
                         case TextContent textContent when !string.IsNullOrEmpty(textContent.Text):
                             emittedText = true;
-                            content += textContent.Text;
-                            await messages.UpdateContentAndStatusAsync(assistantMessageId, content, MessageStatus.Streaming, cancellationToken: CancellationToken.None).ConfigureAwait(false);
-                            yield return ChatStreamUpdate.Text(textContent.Text);
+                            responseBuffer.AppendText(textContent.Text);
                             break;
                     }
                 }
 
                 if (!emittedText && update.Text is { Length: > 0 } fallbackText)
                 {
-                    content += fallbackText;
-                    await messages.UpdateContentAndStatusAsync(assistantMessageId, content, MessageStatus.Streaming, cancellationToken: CancellationToken.None).ConfigureAwait(false);
-                    yield return ChatStreamUpdate.Text(fallbackText);
+                    responseBuffer.AppendText(fallbackText);
                 }
+
+                if (responseBuffer.ShouldFlush)
+                {
+                    var pending = responseBuffer.Drain();
+                    content = pending.Content;
+                    await messages.UpdateContentAndStatusAsync(assistantMessageId, content, MessageStatus.Streaming, cancellationToken: CancellationToken.None).ConfigureAwait(false);
+                    foreach (var pendingUpdate in pending.Updates)
+                    {
+                        yield return pendingUpdate;
+                    }
+                }
+
+                nextUpdateTask = updates.MoveNextAsync().AsTask();
             }
 
             foreach (var callId in activeToolCalls.Keys)
             {
-                yield return ChatStreamUpdate.ToolCompleted(callId);
+                responseBuffer.AppendToolCompleted(callId);
+            }
+
+            if (responseBuffer.HasPendingUpdates)
+            {
+                var pending = responseBuffer.Drain();
+                content = pending.Content;
+                foreach (var pendingUpdate in pending.Updates)
+                {
+                    yield return pendingUpdate;
+                }
             }
 
             await messages.UpdateContentAndStatusAsync(assistantMessageId, content, MessageStatus.Completed, cancellationToken: CancellationToken.None).ConfigureAwait(false);
@@ -311,6 +360,9 @@ public sealed class ChatService(
         await messages.UpdateContentAndStatusAsync(messageId, persistedContent, status, errorCode, errorMessage, CancellationToken.None).ConfigureAwait(false);
         return persistedContent;
     }
+
+    private static string GetBufferedContent(StreamingResponseBuffer responseBuffer, string content) =>
+        responseBuffer.HasPendingUpdates ? responseBuffer.Drain().Content : content;
 
     private static ProviderSnapshot ReadProviderSnapshot(string configuration)
     {
@@ -408,7 +460,9 @@ public sealed class ChatService(
             // always persist and restore its session on the next message.
             DisableCompaction = true,
             MaxContextWindowTokens = 128_000,
-            MaxOutputTokens = 16_384,
+            // Do not impose a global completion cap here. Reasoning tokens count as output
+            // tokens, so the old 16K limit could stop a response before its visible answer.
+            // The selected provider/model remains the source of truth for its supported limit.
             MaximumIterationsPerRequest = MaximumToolIterationsPerRequest,
         });
     }
