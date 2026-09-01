@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Ailo.AI.Skills;
 using Ailo.Localization;
 using Ailo.Services;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -12,6 +13,9 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
 {
     private readonly AgentSkillsService _agentSkills;
     private readonly IConfirmationService? _confirmation;
+    private IStorageProvider? _storageProvider;
+    private AgentSkillRepositoryScan? _repositoryScan;
+    private CancellationTokenSource? _scanCancellation;
 
     public AgentSkillsSettingsViewModel(
         AgentSkillsService agentSkills,
@@ -24,16 +28,212 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
     }
 
     public ObservableCollection<AgentSkillSourceGroupViewModel> Groups { get; } = [];
+    public ObservableCollection<AgentSkillInstallCandidateViewModel> InstallCandidates { get; } = [];
+    public ObservableCollection<AgentSkillInstallCandidateViewModel> VisibleInstallCandidates { get; } = [];
+    public IReadOnlyList<AgentSkillInstallType> InstallTypes => _agentSkills.InstallTypes;
 
     [ObservableProperty] private AgentSkillSourceGroupViewModel? _selectedGroup;
     [ObservableProperty] private AgentSkillItemViewModel? _selectedSkill;
+    [ObservableProperty] private string _repositoryUrl = string.Empty;
+    [ObservableProperty] private AgentSkillInstallType? _selectedInstallType;
+    [ObservableProperty] private string _customInstallDirectory = string.Empty;
+    [ObservableProperty] private bool _isInstalling;
+    [ObservableProperty] private bool _isScanning;
+    [ObservableProperty] private bool _selectAllInstallCandidates;
+    [ObservableProperty] private string _installSearchText = string.Empty;
+    [ObservableProperty] private string _scanStatusMessage = string.Empty;
+    [ObservableProperty] private bool _hasScanError;
+
+    private bool _synchronizingInstallSelection;
 
     public bool HasSelectedSkill => SelectedSkill is not null;
+    public bool HasInstallCandidates => InstallCandidates.Count > 0;
+    public bool HasSelectedInstallCandidates => InstallCandidates.Any(candidate => candidate.IsSelected);
+    public string InstallTargetDirectory
+    {
+        get
+        {
+            if (SelectedInstallType is null)
+                return string.Empty;
+
+            try
+            {
+                return SelectedInstallType.GetInstallDirectory(CustomInstallDirectory);
+            }
+            catch (ArgumentException)
+            {
+                return CustomInstallDirectory;
+            }
+        }
+    }
+    public bool CanScanRepository => !IsScanning && !string.IsNullOrWhiteSpace(RepositoryUrl);
 
     public Task LoadAsync(CancellationToken cancellationToken = default) => RefreshAsync(cancellationToken);
 
     [RelayCommand]
     private Task RefreshAsync() => RefreshAsync(CancellationToken.None);
+
+    [RelayCommand]
+    private void BeginInstall()
+    {
+        DisposeRepositoryScan();
+        _scanCancellation?.Cancel();
+        RepositoryUrl = string.Empty;
+        CustomInstallDirectory = string.Empty;
+        InstallSearchText = string.Empty;
+        SelectedInstallType = InstallTypes.FirstOrDefault();
+        InstallCandidates.Clear();
+        VisibleInstallCandidates.Clear();
+        SelectAllInstallCandidates = false;
+        ScanStatusMessage = string.Empty;
+        HasScanError = false;
+        IsInstalling = true;
+        StatusMessage = string.Empty;
+        OnPropertyChanged(nameof(HasInstallCandidates));
+        OnPropertyChanged(nameof(HasSelectedInstallCandidates));
+    }
+
+    [RelayCommand]
+    private void CancelInstall()
+    {
+        DisposeRepositoryScan();
+        _scanCancellation?.Cancel();
+        InstallCandidates.Clear();
+        VisibleInstallCandidates.Clear();
+        InstallSearchText = string.Empty;
+        SelectAllInstallCandidates = false;
+        ScanStatusMessage = string.Empty;
+        HasScanError = false;
+        IsInstalling = false;
+        OnPropertyChanged(nameof(HasInstallCandidates));
+        OnPropertyChanged(nameof(HasSelectedInstallCandidates));
+        StatusMessage = string.Empty;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanScanRepository))]
+    private async Task ScanRepositoryAsync()
+    {
+        _scanCancellation?.Cancel();
+        using var scanCancellation = new CancellationTokenSource();
+        _scanCancellation = scanCancellation;
+        IsScanning = true;
+        HasScanError = false;
+        ScanStatusMessage = T("AgentSkillsCloningRepository");
+        StatusMessage = ScanStatusMessage;
+        DisposeRepositoryScan();
+        InstallCandidates.Clear();
+        VisibleInstallCandidates.Clear();
+        InstallSearchText = string.Empty;
+        SelectAllInstallCandidates = false;
+        OnPropertyChanged(nameof(HasInstallCandidates));
+        OnPropertyChanged(nameof(HasSelectedInstallCandidates));
+        var progress = new Progress<AgentSkillScanStep>(step =>
+        {
+            ScanStatusMessage = step switch
+            {
+                AgentSkillScanStep.CloningRepository => T("AgentSkillsCloningRepository"),
+                AgentSkillScanStep.ScanningSkills => T("AgentSkillsScanningSkills"),
+                _ => T("AgentSkillsScanning")
+            };
+            StatusMessage = ScanStatusMessage;
+        });
+        try
+        {
+            _repositoryScan = await _agentSkills.ScanRepositoryAsync(
+                RepositoryUrl,
+                scanCancellation.Token,
+                progress);
+            scanCancellation.Token.ThrowIfCancellationRequested();
+            foreach (var candidate in _repositoryScan.Skills)
+                InstallCandidates.Add(new AgentSkillInstallCandidateViewModel(candidate, OnInstallCandidateSelectionChanged));
+            RefreshVisibleInstallCandidates();
+            SelectAllInstallCandidates = InstallCandidates.Count > 0;
+            OnPropertyChanged(nameof(HasInstallCandidates));
+            OnPropertyChanged(nameof(HasSelectedInstallCandidates));
+            StatusMessage = InstallCandidates.Count == 0 ? T("AgentSkillsInstallEmpty") : T("AgentSkillsScanCompleted");
+        }
+        catch (OperationCanceledException) when (scanCancellation.IsCancellationRequested)
+        {
+            ScanStatusMessage = string.Empty;
+            HasScanError = false;
+        }
+        catch (Exception exception)
+        {
+            ScanStatusMessage = string.Format(T("AgentSkillsScanFailed"), exception.Message);
+            StatusMessage = ScanStatusMessage;
+            HasScanError = true;
+        }
+        finally
+        {
+            if (ReferenceEquals(_scanCancellation, scanCancellation))
+                _scanCancellation = null;
+            IsScanning = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallSelectedSkillsAsync()
+    {
+        if (_repositoryScan is null || SelectedInstallType is null)
+        {
+            StatusMessage = T("AgentSkillsInstallRequired");
+            return;
+        }
+
+        var selectedIds = InstallCandidates
+            .Where(candidate => candidate.IsSelected)
+            .Select(candidate => candidate.Id)
+            .ToArray();
+        if (selectedIds.Length == 0)
+        {
+            StatusMessage = T("AgentSkillsInstallSelectSkills");
+            return;
+        }
+
+        try
+        {
+            var installed = await _agentSkills.InstallAsync(
+                _repositoryScan,
+                selectedIds,
+                SelectedInstallType,
+                CustomInstallDirectory);
+        DisposeRepositoryScan();
+        _scanCancellation?.Cancel();
+        InstallCandidates.Clear();
+            VisibleInstallCandidates.Clear();
+        InstallSearchText = string.Empty;
+        ScanStatusMessage = string.Empty;
+        HasScanError = false;
+            SelectAllInstallCandidates = false;
+            IsInstalling = false;
+            OnPropertyChanged(nameof(HasInstallCandidates));
+            OnPropertyChanged(nameof(HasSelectedInstallCandidates));
+            await RefreshAsync(CancellationToken.None);
+            StatusMessage = string.Format(T("AgentSkillsInstalled"), installed.Count, InstallTargetDirectory);
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = exception.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task BrowseInstallDirectoryAsync()
+    {
+        if (_storageProvider is null)
+            return;
+
+        var folders = await _storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = T("AgentSkillsSelectInstallDirectory"),
+            AllowMultiple = false
+        });
+        var selectedPath = folders.FirstOrDefault()?.TryGetLocalPath();
+        if (!string.IsNullOrWhiteSpace(selectedPath))
+            CustomInstallDirectory = selectedPath;
+    }
+
+    public void AttachStorageProvider(IStorageProvider? storageProvider) => _storageProvider = storageProvider;
 
     [RelayCommand(CanExecute = nameof(CanUninstallSkill))]
     private async Task UninstallSkillAsync()
@@ -76,7 +276,8 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
             var skills = await _agentSkills.RefreshAsync(cancellationToken);
             var grouped = skills
                 .GroupBy(skill => new { skill.Source, skill.SourceRoot })
-                .OrderBy(group => group.Key.Source)
+                .OrderBy(group => string.Equals(group.Key.Source, "Ailo", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(group => group.Key.Source, StringComparer.OrdinalIgnoreCase)
                 .Select(group => new AgentSkillSourceGroupViewModel(
                     group.Key.Source,
                     group.Key.SourceRoot,
@@ -127,6 +328,88 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
     {
         OnPropertyChanged(nameof(HasSelectedSkill));
         UninstallSkillCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnRepositoryUrlChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanScanRepository));
+        ScanRepositoryCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsScanningChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanScanRepository));
+        ScanRepositoryCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnSelectedInstallTypeChanged(AgentSkillInstallType? value) =>
+        OnPropertyChanged(nameof(InstallTargetDirectory));
+
+    partial void OnCustomInstallDirectoryChanged(string value) =>
+        OnPropertyChanged(nameof(InstallTargetDirectory));
+
+    partial void OnInstallSearchTextChanged(string value) => RefreshVisibleInstallCandidates();
+
+    partial void OnSelectAllInstallCandidatesChanged(bool value)
+    {
+        if (_synchronizingInstallSelection)
+            return;
+
+        _synchronizingInstallSelection = true;
+        try
+        {
+            foreach (var candidate in InstallCandidates)
+                candidate.IsSelected = value;
+        }
+        finally
+        {
+            _synchronizingInstallSelection = false;
+        }
+
+        OnPropertyChanged(nameof(HasSelectedInstallCandidates));
+    }
+
+    private void OnInstallCandidateSelectionChanged()
+    {
+        if (!_synchronizingInstallSelection)
+        {
+            _synchronizingInstallSelection = true;
+            try
+            {
+                SelectAllInstallCandidates = InstallCandidates.Count > 0 && InstallCandidates.All(candidate => candidate.IsSelected);
+            }
+            finally
+            {
+                _synchronizingInstallSelection = false;
+            }
+        }
+
+        OnPropertyChanged(nameof(HasSelectedInstallCandidates));
+    }
+
+    private void RefreshVisibleInstallCandidates()
+    {
+        var searchText = InstallSearchText.Trim();
+        var candidates = string.IsNullOrEmpty(searchText)
+            ? InstallCandidates
+            : InstallCandidates.Where(candidate => candidate.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+
+        VisibleInstallCandidates.Clear();
+        foreach (var candidate in candidates)
+            VisibleInstallCandidates.Add(candidate);
+    }
+
+    public override void Dispose()
+    {
+        _scanCancellation?.Cancel();
+        DisposeRepositoryScan();
+        base.Dispose();
+    }
+
+    private void DisposeRepositoryScan()
+    {
+        _repositoryScan?.Dispose();
+        _repositoryScan = null;
     }
 }
 
@@ -195,4 +478,26 @@ public sealed partial class AgentSkillItemViewModel : ObservableObject
             _ready = true;
         }
     }
+}
+
+public sealed partial class AgentSkillInstallCandidateViewModel : ObservableObject
+{
+    private readonly Action _selectionChanged;
+
+    public AgentSkillInstallCandidateViewModel(AgentSkillInstallCandidate candidate, Action selectionChanged)
+    {
+        ArgumentNullException.ThrowIfNull(selectionChanged);
+        Id = candidate.Id;
+        Name = candidate.Name;
+        Description = candidate.Description;
+        _selectionChanged = selectionChanged;
+    }
+
+    public string Id { get; }
+    public string Name { get; }
+    public string Description { get; }
+
+    [ObservableProperty] private bool _isSelected = true;
+
+    partial void OnIsSelectedChanged(bool value) => _selectionChanged();
 }

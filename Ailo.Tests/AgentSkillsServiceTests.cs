@@ -88,6 +88,33 @@ public sealed class AgentSkillsServiceTests : IDisposable
         Assert.NotEmpty(await service.RefreshAsync());
     }
 
+    [Fact]
+    public async Task InstallAsync_CreatesSelectedTypeDirectoryStructure()
+    {
+        var repositoryRoot = Path.Combine(_root, "repository");
+        WriteSkill(repositoryRoot, "release-notes", "Prepare release notes.", withScript: true);
+        var candidate = new AgentSkillInstallCandidate(
+            "candidate-1", "release-notes", "Prepare release notes.", "release-notes");
+        using var repository = new AgentSkillRepositoryScan(
+            "https://github.com/example/skills.git",
+            repositoryRoot,
+            [candidate]);
+        var service = new AgentSkillsService(
+            Path.Combine(_root, "skills-availability.json"),
+            [new AgentSkillSourceDirectory("Ailo", Path.Combine(_root, "ailo-skills"))]);
+        var installBase = Path.Combine(_root, "custom-install-root");
+
+        var installed = await service.InstallAsync(
+            repository,
+            [candidate.Id],
+            Assert.Single(service.InstallTypes),
+            installBase);
+
+        Assert.Equal(candidate, Assert.Single(installed));
+        Assert.True(File.Exists(Path.Combine(installBase, "skills", "release-notes", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(installBase, "skills", "release-notes", "convert.py")));
+    }
+
     private static void WriteSkill(string root, string name, string description, bool withScript = false)
     {
         var directory = Path.Combine(root, name);

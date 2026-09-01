@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -22,14 +23,23 @@ public sealed class AgentSkillsService
 
     private readonly string _availabilityPath;
     private readonly IReadOnlyList<AgentSkillSourceDirectory> _sources;
+    private readonly IReadOnlyList<AgentSkillInstallType> _installTypes;
     private readonly SemaphoreSlim _availabilityGate = new(1, 1);
 
     public AgentSkillsService(AppPaths paths)
-        : this(paths.SkillsAvailabilityPath, CreateDefaultSources(paths))
+        : this(paths.SkillsAvailabilityPath, CreateDefaultSources(paths), CreateDefaultInstallTypes(paths))
     {
     }
 
     internal AgentSkillsService(string availabilityPath, IReadOnlyList<AgentSkillSourceDirectory> sources)
+        : this(availabilityPath, sources, CreateInstallTypesFromSources(sources))
+    {
+    }
+
+    private AgentSkillsService(
+        string availabilityPath,
+        IReadOnlyList<AgentSkillSourceDirectory> sources,
+        IReadOnlyList<AgentSkillInstallType> installTypes)
     {
         _availabilityPath = availabilityPath;
         _sources = sources
@@ -37,9 +47,15 @@ public sealed class AgentSkillsService
             .GroupBy(source => Path.GetFullPath(source.Path), PathComparer)
             .Select(group => group.First() with { Path = Path.GetFullPath(group.Key) })
             .ToArray();
+        _installTypes = installTypes
+            .Where(type => !string.IsNullOrWhiteSpace(type.Name) && !string.IsNullOrWhiteSpace(type.DefaultDirectory))
+            .GroupBy(type => type.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First() with { DefaultDirectory = Path.GetFullPath(group.First().DefaultDirectory) })
+            .ToArray();
     }
 
     public IReadOnlyList<AgentSkillSourceDirectory> Sources => _sources;
+    public IReadOnlyList<AgentSkillInstallType> InstallTypes => _installTypes;
 
     public async Task<IReadOnlyList<AgentSkillDefinition>> RefreshAsync(CancellationToken cancellationToken = default)
     {
@@ -141,6 +157,105 @@ public sealed class AgentSkillsService
         }
     }
 
+    /// <summary>Clones a Git repository into a temporary directory and scans every folder for skills.</summary>
+    public async Task<AgentSkillRepositoryScan> ScanRepositoryAsync(
+        string repositoryUrl,
+        CancellationToken cancellationToken = default,
+        IProgress<AgentSkillScanStep>? progress = null)
+    {
+        var normalizedUrl = ValidateRepositoryUrl(repositoryUrl);
+        var temporaryRoot = Path.Combine(Path.GetTempPath(), "Ailo", "skill-install", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.GetDirectoryName(temporaryRoot)!);
+
+        try
+        {
+            progress?.Report(AgentSkillScanStep.CloningRepository);
+            await CloneRepositoryAsync(normalizedUrl, temporaryRoot, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report(AgentSkillScanStep.ScanningSkills);
+            var candidates = EnumerateSkillFiles(temporaryRoot, cancellationToken)
+                .Where(skillFile => !IsGitMetadataPath(Path.GetRelativePath(temporaryRoot, skillFile)))
+                .Select(skillFile =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var directory = Path.GetDirectoryName(skillFile)!;
+                    var frontmatter = ReadFrontmatter(skillFile);
+                    return frontmatter is null
+                        ? null
+                        : new AgentSkillInstallCandidate(
+                            CreateId(Path.Combine(temporaryRoot, Path.GetRelativePath(temporaryRoot, directory))),
+                            frontmatter.Value.Name,
+                            frontmatter.Value.Description,
+                            Path.GetRelativePath(temporaryRoot, directory));
+                })
+                .Where(candidate => candidate is not null)
+                .Cast<AgentSkillInstallCandidate>()
+                .OrderBy(candidate => candidate.Name, StringComparer.Ordinal)
+                .ToArray();
+            cancellationToken.ThrowIfCancellationRequested();
+            return new AgentSkillRepositoryScan(normalizedUrl, temporaryRoot, candidates);
+        }
+        catch
+        {
+            TryDeleteDirectory(temporaryRoot);
+            throw;
+        }
+    }
+
+    /// <summary>Copies selected packages into the selected Agent Skill directory layout.</summary>
+    public Task<IReadOnlyList<AgentSkillInstallCandidate>> InstallAsync(
+        AgentSkillRepositoryScan repository,
+        IEnumerable<string> candidateIds,
+        AgentSkillInstallType installType,
+        string? customBaseDirectory = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(candidateIds);
+        ArgumentNullException.ThrowIfNull(installType);
+
+        var selectedIds = candidateIds.ToHashSet(StringComparer.Ordinal);
+        var selectedSkills = repository.Skills
+            .Where(skill => selectedIds.Contains(skill.Id))
+            .ToArray();
+        if (selectedSkills.Length == 0)
+            throw new InvalidOperationException("Select at least one skill to install.");
+
+        var supportedType = _installTypes.FirstOrDefault(type =>
+            string.Equals(type.Name, installType.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(type.RelativeDirectory, installType.RelativeDirectory, StringComparison.Ordinal));
+        if (supportedType is null)
+            throw new InvalidOperationException("The selected install type is not supported.");
+
+        var installDirectory = supportedType.GetInstallDirectory(customBaseDirectory);
+        var destinations = selectedSkills
+            .Select(skill => Path.Combine(installDirectory, skill.Name))
+            .ToArray();
+        if (destinations.Distinct(PathComparer).Count() != destinations.Length)
+            throw new InvalidOperationException("The selected skills contain duplicate names.");
+        if (destinations.Any(Directory.Exists) || destinations.Any(File.Exists))
+            throw new IOException("One or more selected skill directories already exist at the destination.");
+
+        Directory.CreateDirectory(installDirectory);
+        try
+        {
+            foreach (var (skill, destination) in selectedSkills.Zip(destinations))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var sourceDirectory = GetRepositorySkillDirectory(repository, skill);
+                CopyDirectory(sourceDirectory, destination, cancellationToken);
+            }
+        }
+        catch
+        {
+            foreach (var destination in destinations)
+                TryDeleteDirectory(destination);
+            throw;
+        }
+
+        return Task.FromResult<IReadOnlyList<AgentSkillInstallCandidate>>(selectedSkills);
+    }
+
     private async Task<HashSet<string>> ReadDisabledDirectoriesAsync(CancellationToken cancellationToken)
     {
         await _availabilityGate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -220,16 +335,205 @@ public sealed class AgentSkillsService
         return sources;
     }
 
-    private static IEnumerable<string> EnumerateSkillFiles(string root)
+    private static IReadOnlyList<AgentSkillInstallType> CreateDefaultInstallTypes(AppPaths paths)
+    {
+        var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME");
+        var codexDirectory = string.IsNullOrWhiteSpace(codexHome)
+            ? Path.Combine(profile, ".codex", "skills")
+            : Path.Combine(codexHome, "skills");
+
+        return
+        [
+            new("Ailo", "skills", paths.SkillsDirectory),
+            new("Codex", Path.Combine(".codex", "skills"), codexDirectory),
+            new("Claude Code", Path.Combine(".claude", "skills"), Path.Combine(profile, ".claude", "skills")),
+            new("GitHub Copilot", Path.Combine(".copilot", "skills"), Path.Combine(profile, ".copilot", "skills")),
+            new("Agents", Path.Combine(".agents", "skills"), Path.Combine(profile, ".agents", "skills")),
+            new("Other agents", Path.Combine(".config", "agents", "skills"), Path.Combine(profile, ".config", "agents", "skills")),
+            new("Gemini CLI", Path.Combine(".gemini", "skills"), Path.Combine(profile, ".gemini", "skills")),
+            new("OpenCode", Path.Combine(".opencode", "skills"), Path.Combine(profile, ".opencode", "skills"))
+        ];
+    }
+
+    private static IReadOnlyList<AgentSkillInstallType> CreateInstallTypesFromSources(IReadOnlyList<AgentSkillSourceDirectory> sources) =>
+        sources
+            .GroupBy(source => source.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new AgentSkillInstallType(
+                group.Key,
+                GetInstallRelativeDirectory(group.Key),
+                group.First().Path))
+            .ToArray();
+
+    private static string GetInstallRelativeDirectory(string sourceName) => sourceName switch
+    {
+        "Ailo" => "skills",
+        "Codex" => Path.Combine(".codex", "skills"),
+        "Claude Code" => Path.Combine(".claude", "skills"),
+        "GitHub Copilot" => Path.Combine(".copilot", "skills"),
+        "Agents" => Path.Combine(".agents", "skills"),
+        "Other agents" => Path.Combine(".config", "agents", "skills"),
+        "Gemini CLI" => Path.Combine(".gemini", "skills"),
+        "OpenCode" => Path.Combine(".opencode", "skills"),
+        _ => Path.Combine("skills", sourceName.ToLowerInvariant().Replace(' ', '-'))
+    };
+
+    private static string ValidateRepositoryUrl(string repositoryUrl)
+    {
+        var value = repositoryUrl?.Trim();
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("A Git repository URL is required.", nameof(repositoryUrl));
+
+        if (Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+            uri.Scheme is "http" or "https" or "ssh" or "git" &&
+            !string.IsNullOrWhiteSpace(uri.Host))
+            return value;
+
+        if (value.StartsWith("git@", StringComparison.OrdinalIgnoreCase) && value.Contains(':'))
+            return value;
+
+        throw new ArgumentException("Enter a valid Git repository URL.", nameof(repositoryUrl));
+    }
+
+    private static async Task CloneRepositoryAsync(
+        string repositoryUrl,
+        string destination,
+        CancellationToken cancellationToken)
+    {
+        var startInfo = new ProcessStartInfo("git")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add("clone");
+        startInfo.ArgumentList.Add("--depth");
+        startInfo.ArgumentList.Add("1");
+        startInfo.ArgumentList.Add("--");
+        startInfo.ArgumentList.Add(repositoryUrl);
+        startInfo.ArgumentList.Add(destination);
+
+        Process process;
+        try
+        {
+            process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Could not start Git.");
+        }
+        catch (Win32Exception exception)
+        {
+            throw new InvalidOperationException("Git is not installed or is not available on PATH.", exception);
+        }
+
+        using (process)
+        using (cancellationToken.Register(() => TryKill(process)))
+        {
+            var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            try
+            {
+                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                TryKill(process);
+                throw;
+            }
+
+            _ = await outputTask.ConfigureAwait(false);
+            var error = await errorTask.ConfigureAwait(false);
+            if (process.ExitCode != 0)
+            {
+                var detail = string.IsNullOrWhiteSpace(error) ? "The Git command failed." : error.Trim();
+                throw new InvalidOperationException($"Git clone failed: {detail.Replace(repositoryUrl, "[repository]", StringComparison.Ordinal)}");
+            }
+        }
+    }
+
+    private static string GetRepositorySkillDirectory(AgentSkillRepositoryScan repository, AgentSkillInstallCandidate candidate)
+    {
+        var directory = Path.GetFullPath(Path.Combine(repository.RepositoryPath, candidate.RelativeDirectory));
+        var relativePath = Path.GetRelativePath(repository.RepositoryPath, directory);
+        if (relativePath is "." or ".." || relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal) || Path.IsPathRooted(relativePath))
+            throw new InvalidOperationException("The repository contains an invalid skill directory.");
+        if (!Directory.Exists(directory))
+            throw new InvalidOperationException($"Skill '{candidate.Name}' is no longer available in the cloned repository.");
+        return directory;
+    }
+
+    private static void CopyDirectory(string source, string destination, CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (var file in Directory.EnumerateFiles(source, "*", new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = false,
+            AttributesToSkip = FileAttributes.ReparsePoint
+        }))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var relativePath = Path.GetRelativePath(source, file);
+            if (IsGitMetadataPath(relativePath))
+                continue;
+            var sourceInfo = new FileInfo(file);
+            if ((sourceInfo.Attributes & FileAttributes.ReparsePoint) != 0)
+                continue;
+            var destinationFile = Path.Combine(destination, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+            File.Copy(file, destinationFile, overwrite: false);
+        }
+    }
+
+    private static bool IsGitMetadataPath(string relativePath) =>
+        relativePath.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries)
+            .Any(segment => string.Equals(segment, ".git", StringComparison.OrdinalIgnoreCase));
+
+    private static void TryKill(Process process)
     {
         try
         {
-            return Directory.EnumerateFiles(root, "SKILL.md", new EnumerationOptions
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static IEnumerable<string> EnumerateSkillFiles(string root, CancellationToken cancellationToken = default)
+    {
+        var files = new List<string>();
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(root, "SKILL.md", new EnumerationOptions
             {
                 RecurseSubdirectories = true,
                 IgnoreInaccessible = true,
                 AttributesToSkip = FileAttributes.ReparsePoint
-            }).ToArray();
+            }))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                files.Add(file);
+            }
+            return files;
         }
         catch (IOException)
         {

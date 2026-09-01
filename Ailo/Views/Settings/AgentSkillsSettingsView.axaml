@@ -1,17 +1,26 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Ailo.ViewModels"
+             xmlns:skills="clr-namespace:Ailo.AI.Skills"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              x:Class="Ailo.Views.Settings.AgentSkillsSettingsView"
              x:DataType="vm:AgentSkillsSettingsViewModel">
-    <Grid RowDefinitions="Auto,*" RowSpacing="12">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
         <DockPanel LastChildFill="True">
-            <Button DockPanel.Dock="Right" Classes="primary-button" Command="{Binding RefreshCommand}" Padding="10,5">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <materialIcons:MaterialIcon Kind="Refresh" Width="16" Height="16"/>
-                    <TextBlock Text="{Binding Localization[Refresh]}"/>
-                </StackPanel>
-            </Button>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                <Button Classes="primary-button" Command="{Binding BeginInstallCommand}" IsVisible="{Binding !IsInstalling}" Padding="10,5">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="CloudDownload" Width="16" Height="16"/>
+                        <TextBlock Text="{Binding Localization[AgentSkillsInstall]}"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="primary-button" Command="{Binding RefreshCommand}" IsVisible="{Binding !IsInstalling}" Padding="10,5">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="Refresh" Width="16" Height="16"/>
+                        <TextBlock Text="{Binding Localization[Refresh]}"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
             <TextBlock Text="{Binding Localization[AgentSkillsTitle]}" FontSize="22" FontWeight="Bold"/>
         </DockPanel>
 
@@ -69,36 +78,163 @@
             </Border>
 
             <Border Grid.Column="1" Classes="card" Padding="14">
-                <ScrollViewer>
-                    <StackPanel Spacing="12" IsVisible="{Binding HasSelectedSkill}">
-                        <DockPanel LastChildFill="True">
-                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <Button Command="{Binding UninstallSkillCommand}"
-                                        Padding="7"
-                                        Background="Transparent"
-                                        BorderBrush="Transparent"
-                                        BorderThickness="0"
-                                        ToolTip.Tip="{Binding Localization[AgentSkillsUninstall]}"
-                                        AutomationProperties.Name="{Binding Localization[AgentSkillsUninstall]}">
-                                    <materialIcons:MaterialIcon Kind="Delete" Width="16" Height="16" Foreground="#C62828"/>
-                                </Button>
-                                <TextBlock Text="{Binding SelectedSkill.EnabledText}" VerticalAlignment="Center"/>
-                                <ToggleSwitch IsChecked="{Binding SelectedSkill.IsEnabled, Mode=TwoWay}" OnContent="{x:Null}" OffContent="{x:Null}"/>
-                            </StackPanel>
-                            <TextBlock Text="{Binding SelectedSkill.Name}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                <Grid>
+                    <ScrollViewer IsVisible="{Binding !IsInstalling}">
+                        <StackPanel Spacing="12" IsVisible="{Binding HasSelectedSkill}">
+                            <DockPanel LastChildFill="True">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <Button Command="{Binding UninstallSkillCommand}"
+                                            Padding="7"
+                                            Background="Transparent"
+                                            BorderBrush="Transparent"
+                                            BorderThickness="0"
+                                            ToolTip.Tip="{Binding Localization[AgentSkillsUninstall]}"
+                                            AutomationProperties.Name="{Binding Localization[AgentSkillsUninstall]}">
+                                        <materialIcons:MaterialIcon Kind="Delete" Width="16" Height="16" Foreground="#C62828"/>
+                                    </Button>
+                                    <TextBlock Text="{Binding SelectedSkill.EnabledText}" VerticalAlignment="Center"/>
+                                    <ToggleSwitch IsChecked="{Binding SelectedSkill.IsEnabled, Mode=TwoWay}" OnContent="{x:Null}" OffContent="{x:Null}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SelectedSkill.Name}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding SelectedSkill.Description}" TextWrapping="Wrap" Opacity="0.8"/>
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                                <TextBlock Text="{Binding Localization[AgentSkillsSource]}" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="1" Text="{Binding SelectedSkill.Source}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Row="1" Text="{Binding Localization[AgentSkillsSkillPath]}" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSkill.SkillFilePath}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Row="2" Text="{Binding Localization[AgentSkillsScripts]}" FontWeight="SemiBold" IsVisible="{Binding SelectedSkill.HasScripts}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSkill.ScriptsText}" IsVisible="{Binding SelectedSkill.HasScripts}"/>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Grid IsVisible="{Binding IsInstalling}"
+                          RowDefinitions="Auto,Auto,Auto,*,Auto"
+                          RowSpacing="10">
+                        <DockPanel Grid.Row="0" LastChildFill="True">
+                            <Button DockPanel.Dock="Right" Command="{Binding CancelInstallCommand}" Padding="10,5">
+                                <TextBlock Text="{Binding Localization[Cancel]}"/>
+                            </Button>
+                            <TextBlock Text="{Binding Localization[AgentSkillsInstallTitle]}" FontSize="18" FontWeight="SemiBold"/>
                         </DockPanel>
-                        <TextBlock Text="{Binding SelectedSkill.Description}" TextWrapping="Wrap" Opacity="0.8"/>
-                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
-                            <TextBlock Text="{Binding Localization[AgentSkillsSource]}" FontWeight="SemiBold"/>
-                            <TextBlock Grid.Column="1" Text="{Binding SelectedSkill.Source}" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Row="1" Text="{Binding Localization[AgentSkillsSkillPath]}" FontWeight="SemiBold"/>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSkill.SkillFilePath}" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Row="2" Text="{Binding Localization[AgentSkillsScripts]}" FontWeight="SemiBold" IsVisible="{Binding SelectedSkill.HasScripts}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSkill.ScriptsText}" IsVisible="{Binding SelectedSkill.HasScripts}"/>
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Text="{Binding RepositoryUrl, Mode=TwoWay}"
+                                     PlaceholderText="{Binding Localization[AgentSkillsRepositoryPlaceholder]}"/>
+                            <Button Grid.Column="1" Classes="primary-button" Command="{Binding ScanRepositoryCommand}"
+                                    IsEnabled="{Binding CanScanRepository}" Padding="10,5">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="Magnify" Width="16" Height="16"/>
+                                    <TextBlock Text="{Binding Localization[AgentSkillsScan]}"/>
+                                </StackPanel>
+                            </Button>
                         </Grid>
-                    </StackPanel>
-                </ScrollViewer>
+                        <Grid Grid.Row="2" RowDefinitions="Auto,Auto" RowSpacing="6">
+                            <Grid ColumnDefinitions="180,*,Auto" ColumnSpacing="8">
+                                <ComboBox ItemsSource="{Binding InstallTypes}"
+                                          SelectedItem="{Binding SelectedInstallType, Mode=TwoWay}"
+                                          Width="180"
+                                          ToolTip.Tip="{Binding Localization[AgentSkillsInstallType]}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="skills:AgentSkillInstallType">
+                                            <TextBlock Text="{Binding Name}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBox Grid.Column="1" Text="{Binding CustomInstallDirectory, Mode=TwoWay}"
+                                         PlaceholderText="{Binding Localization[AgentSkillsCustomDirectoryPlaceholder]}"/>
+                                <Button Grid.Column="2" Command="{Binding BrowseInstallDirectoryCommand}" Padding="10,5">
+                                    <TextBlock Text="{Binding Localization[Browse]}"/>
+                                </Button>
+                            </Grid>
+                            <TextBlock Grid.Row="1" Text="{Binding InstallTargetDirectory}" FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+                        </Grid>
+                        <Grid Grid.Row="3">
+                            <ListBox ItemsSource="{Binding VisibleInstallCandidates}"
+                                     IsVisible="{Binding HasInstallCandidates}"
+                                     VerticalAlignment="Stretch"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="0">
+                                <ListBox.Styles>
+                                    <Style Selector="ListBoxItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Margin" Value="0,0,6,4"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                    </Style>
+                                    <Style Selector="ListBoxItem:pointerover">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                </ListBox.Styles>
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AgentSkillInstallCandidateViewModel">
+                                        <Border Background="{DynamicResource SecondaryCardBackgroundColor}"
+                                                BorderBrush="{DynamicResource ControlBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="{DynamicResource CornerRadiusCompact}"
+                                                Padding="6,2">
+                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                      Content="{Binding Name}"
+                                                      ToolTip.Tip="{Binding Description}"
+                                                      Padding="2,0"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <StackPanel HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         Spacing="10"
+                                         IsVisible="{Binding IsScanning}">
+                                <ProgressBar Width="220" Height="4" IsIndeterminate="True"/>
+                                <TextBlock Text="{Binding ScanStatusMessage}"
+                                           HorizontalAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           TextAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         Spacing="8"
+                                         IsVisible="{Binding HasScanError}">
+                                <materialIcons:MaterialIcon Kind="ErrorOutline"
+                                                             Width="24"
+                                                             Height="24"
+                                                             Foreground="#C62828"
+                                                             HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding ScanStatusMessage}"
+                                           Foreground="#C62828"
+                                           MaxWidth="460"
+                                           TextWrapping="Wrap"
+                                           TextAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                            <CheckBox Content="{Binding Localization[AgentSkillsSelectAll]}"
+                                      IsChecked="{Binding SelectAllInstallCandidates, Mode=TwoWay}"
+                                      IsEnabled="{Binding HasInstallCandidates}"
+                                      VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding InstallSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     PlaceholderText="{Binding Localization[AgentSkillsSearchPlaceholder]}"
+                                     VerticalAlignment="Center"/>
+                            <Button Grid.Column="2" Classes="primary-button" Command="{Binding InstallSelectedSkillsCommand}"
+                                    IsEnabled="{Binding HasSelectedInstallCandidates}" Padding="10,5">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="Download" Width="16" Height="16"/>
+                                    <TextBlock Text="{Binding Localization[AgentSkillsInstallSelected]}"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Grid>
             </Border>
         </Grid>
+        <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" Opacity="0.7" TextWrapping="Wrap" IsVisible="{Binding !IsInstalling}"/>
     </Grid>
 </UserControl>

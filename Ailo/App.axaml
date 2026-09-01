@@ -33,6 +33,12 @@
         </FluentTheme>
         <materialIcons:MaterialIconStyles />
         <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml" />
+        <Style Selector="markdown|CodeBlock">
+            <Setter Property="ColorTheme" Value="VisualStudioLight" />
+        </Style>
+        <Style Selector="markdown|CodeBlock:dark">
+            <Setter Property="ColorTheme" Value="VisualStudioDark" />
+        </Style>
         <!-- Shared modern surface language layered on top of Fluent. -->
         <Style Selector=":is(Button)">
             <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusButton}" />

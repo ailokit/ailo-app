@@ -104,6 +104,10 @@ internal partial class SettingsWindow : Window
         {
             generalSettings.AttachStorageProvider(StorageProvider);
         }
+        else if (vm is AgentSkillsSettingsViewModel agentSkillsSettings)
+        {
+            agentSkillsSettings.AttachStorageProvider(StorageProvider);
+        }
         view.DataContext = vm;
         _ = initialize(vm);
         return (view, vm);
