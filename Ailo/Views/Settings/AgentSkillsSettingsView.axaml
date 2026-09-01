@@ -48,7 +48,7 @@
                     </TabStrip.Styles>
                     <TabStrip.ItemTemplate>
                         <DataTemplate x:DataType="vm:AgentSkillSourceGroupViewModel">
-                            <TextBlock Text="{Binding Source}" FontSize="13" TextTrimming="CharacterEllipsis" MaxWidth="100"/>
+                            <TextBlock Text="{Binding DisplaySource}" FontSize="13" TextTrimming="CharacterEllipsis" MaxWidth="100"/>
                         </DataTemplate>
                     </TabStrip.ItemTemplate>
                 </TabStrip>
@@ -83,6 +83,17 @@
                         <StackPanel Spacing="12" IsVisible="{Binding HasSelectedSkill}">
                             <DockPanel LastChildFill="True">
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <Button Command="{Binding UpdateSkillCommand}"
+                                            IsVisible="{Binding SelectedSkill.HasInstallMetadata}"
+                                            IsEnabled="{Binding !IsUpdatingSkill}"
+                                            Padding="7"
+                                            Background="Transparent"
+                                            BorderBrush="Transparent"
+                                            BorderThickness="0"
+                                            ToolTip.Tip="{Binding Localization[AgentSkillsUpdate]}"
+                                            AutomationProperties.Name="{Binding Localization[AgentSkillsUpdate]}">
+                                        <materialIcons:MaterialIcon Kind="Update" Width="16" Height="16"/>
+                                    </Button>
                                     <Button Command="{Binding UninstallSkillCommand}"
                                             Padding="7"
                                             Background="Transparent"
@@ -102,7 +113,21 @@
                                 <TextBlock Text="{Binding Localization[AgentSkillsSource]}" FontWeight="SemiBold"/>
                                 <TextBlock Grid.Column="1" Text="{Binding SelectedSkill.Source}" TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Grid.Row="1" Text="{Binding Localization[AgentSkillsSkillPath]}" FontWeight="SemiBold"/>
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSkill.SkillFilePath}" TextTrimming="CharacterEllipsis"/>
+                                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
+                                    <TextBlock Text="{Binding SelectedSkill.SkillFilePath}" TextTrimming="CharacterEllipsis"/>
+                                    <Button Grid.Column="1" Classes="transparent-button" Padding="4"
+                                            Command="{Binding CopySkillPathCommand}"
+                                            ToolTip.Tip="{Binding Localization[AgentSkillsCopyPath]}"
+                                            AutomationProperties.Name="{Binding Localization[AgentSkillsCopyPath]}">
+                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="15" Height="15"/>
+                                    </Button>
+                                    <Button Grid.Column="2" Classes="transparent-button" Padding="4"
+                                            Command="{Binding OpenSkillFolderCommand}"
+                                            ToolTip.Tip="{Binding Localization[AgentSkillsOpenFolder]}"
+                                            AutomationProperties.Name="{Binding Localization[AgentSkillsOpenFolder]}">
+                                        <materialIcons:MaterialIcon Kind="FolderOpen" Width="15" Height="15"/>
+                                    </Button>
+                                </Grid>
                                 <TextBlock Grid.Row="2" Text="{Binding Localization[AgentSkillsScripts]}" FontWeight="SemiBold" IsVisible="{Binding SelectedSkill.HasScripts}"/>
                                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSkill.ScriptsText}" IsVisible="{Binding SelectedSkill.HasScripts}"/>
                             </Grid>

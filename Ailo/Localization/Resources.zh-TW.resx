@@ -39,6 +39,16 @@
     <data name="AgentSkillsSkillPath"><value>技能檔案</value></data>
     <data name="AgentSkillsNoScripts"><value>沒有可執行指令碼</value></data>
     <data name="AgentSkillsUninstall"><value>解除安裝</value></data>
+    <data name="AgentSkillsUpdate"><value>更新</value></data>
+    <data name="AgentSkillsUpdating"><value>正在更新技能…</value></data>
+    <data name="AgentSkillsUpdated"><value>技能已更新。</value></data>
+    <data name="AgentSkillsUpdateMissingWarning"><value>最新儲存庫中已找不到此技能。是否刪除已安裝的技能？</value></data>
+    <data name="AgentSkillsUpdateCancelled"><value>已取消技能更新。</value></data>
+    <data name="AgentSkillsRemovedAfterUpdateMissing"><value>儲存庫中已不存在該技能，已將其刪除。</value></data>
+    <data name="AgentSkillsCopyPath"><value>複製技能路徑</value></data>
+    <data name="AgentSkillsOpenFolder"><value>開啟技能資料夾</value></data>
+    <data name="AgentSkillsPathCopied"><value>技能路徑已複製。</value></data>
+    <data name="AgentSkillsCustom"><value>自訂</value></data>
     <data name="AgentSkillsUninstalled"><value>技能已解除安裝。</value></data>
     <data name="AgentSkillsExternalUninstallWarning"><value>特別提醒：此技能儲存在 Ailo 自己的技能目錄之外。解除安裝會永久刪除整個技能資料夾，並可能影響其他使用它的 Agent。來源目錄：{0}</value></data>
     <data name="AgentSkillsInstall"><value>安裝</value></data>

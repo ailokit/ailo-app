@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Ailo.AI.Skills;
 using Ailo.Localization;
 using Ailo.Services;
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,18 +14,22 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
 {
     private readonly AgentSkillsService _agentSkills;
     private readonly IConfirmationService? _confirmation;
+    private readonly ISystemBrowserService? _browser;
     private IStorageProvider? _storageProvider;
+    private IClipboard? _clipboard;
     private AgentSkillRepositoryScan? _repositoryScan;
     private CancellationTokenSource? _scanCancellation;
 
     public AgentSkillsSettingsViewModel(
         AgentSkillsService agentSkills,
         LocalizationService localization,
-        IConfirmationService? confirmation = null)
+        IConfirmationService? confirmation = null,
+        ISystemBrowserService? browser = null)
         : base(localization)
     {
         _agentSkills = agentSkills;
         _confirmation = confirmation;
+        _browser = browser;
     }
 
     public ObservableCollection<AgentSkillSourceGroupViewModel> Groups { get; } = [];
@@ -38,6 +43,7 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
     [ObservableProperty] private AgentSkillInstallType? _selectedInstallType;
     [ObservableProperty] private string _customInstallDirectory = string.Empty;
     [ObservableProperty] private bool _isInstalling;
+    [ObservableProperty] private bool _isUpdatingSkill;
     [ObservableProperty] private bool _isScanning;
     [ObservableProperty] private bool _selectAllInstallCandidates;
     [ObservableProperty] private string _installSearchText = string.Empty;
@@ -79,7 +85,7 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
         DisposeRepositoryScan();
         _scanCancellation?.Cancel();
         RepositoryUrl = string.Empty;
-        CustomInstallDirectory = string.Empty;
+        CustomInstallDirectory = _agentSkills.CustomSkillsDirectory ?? string.Empty;
         InstallSearchText = string.Empty;
         SelectedInstallType = InstallTypes.FirstOrDefault();
         InstallCandidates.Clear();
@@ -235,6 +241,95 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
 
     public void AttachStorageProvider(IStorageProvider? storageProvider) => _storageProvider = storageProvider;
 
+    public void AttachClipboard(IClipboard? clipboard) => _clipboard = clipboard;
+
+    [RelayCommand(CanExecute = nameof(CanUpdateSkill))]
+    private async Task UpdateSkillAsync()
+    {
+        var skill = SelectedSkill;
+        if (skill is null || !skill.HasInstallMetadata)
+            return;
+
+        IsUpdatingSkill = true;
+        StatusMessage = T("AgentSkillsUpdating");
+        var progress = new Progress<AgentSkillScanStep>(step =>
+        {
+            StatusMessage = step switch
+            {
+                AgentSkillScanStep.CloningRepository => T("AgentSkillsCloningRepository"),
+                AgentSkillScanStep.ScanningSkills => T("AgentSkillsScanningSkills"),
+                _ => T("AgentSkillsUpdating")
+            };
+        });
+        try
+        {
+            await _agentSkills.UpdateAsync(skill.Definition, progress: progress);
+            await RefreshAsync(CancellationToken.None);
+            StatusMessage = T("AgentSkillsUpdated");
+        }
+        catch (AgentSkillUpdateUnavailableException)
+        {
+            var confirmed = _confirmation is null || await _confirmation.ConfirmDeleteWithWarningAsync(
+                skill.Name,
+                T("AgentSkillsUpdateMissingWarning"));
+            if (!confirmed)
+            {
+                StatusMessage = T("AgentSkillsUpdateCancelled");
+                return;
+            }
+
+            await _agentSkills.UninstallAsync(skill.DirectoryPath);
+            await RefreshAsync(CancellationToken.None);
+            StatusMessage = T("AgentSkillsRemovedAfterUpdateMissing");
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = exception.Message;
+        }
+        finally
+        {
+            IsUpdatingSkill = false;
+        }
+    }
+
+    private bool CanUpdateSkill() => !IsUpdatingSkill && SelectedSkill?.HasInstallMetadata == true;
+
+    [RelayCommand]
+    private async Task CopySkillPathAsync()
+    {
+        if (SelectedSkill is null || _clipboard is null)
+            return;
+
+        try
+        {
+            await _clipboard.SetTextAsync(SelectedSkill.SkillFilePath);
+            StatusMessage = T("AgentSkillsPathCopied");
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = exception.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenSkillFolder()
+    {
+        if (SelectedSkill is null || _browser is null)
+            return;
+
+        try
+        {
+            _browser.Open(new UriBuilder(Uri.UriSchemeFile, string.Empty)
+            {
+                Path = SelectedSkill.DirectoryPath
+            }.Uri);
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = exception.Message;
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanUninstallSkill))]
     private async Task UninstallSkillAsync()
     {
@@ -281,7 +376,8 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
                 .Select(group => new AgentSkillSourceGroupViewModel(
                     group.Key.Source,
                     group.Key.SourceRoot,
-                    group.OrderBy(skill => skill.Name).Select(skill => new AgentSkillItemViewModel(skill, T("AgentSkillsEnabled"), T("AgentSkillsScripts"), SetEnabledAsync))))
+                    group.OrderBy(skill => skill.Name).Select(skill => new AgentSkillItemViewModel(skill, T("AgentSkillsEnabled"), T("AgentSkillsScripts"), SetEnabledAsync)),
+                    string.Equals(group.Key.Source, "Custom", StringComparison.OrdinalIgnoreCase) ? T("AgentSkillsCustom") : null))
                 .ToArray();
 
             Groups.Clear();
@@ -328,7 +424,10 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
     {
         OnPropertyChanged(nameof(HasSelectedSkill));
         UninstallSkillCommand.NotifyCanExecuteChanged();
+        UpdateSkillCommand.NotifyCanExecuteChanged();
     }
+
+    partial void OnIsUpdatingSkillChanged(bool value) => UpdateSkillCommand.NotifyCanExecuteChanged();
 
     partial void OnRepositoryUrlChanged(string value)
     {
@@ -416,9 +515,11 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
 public sealed class AgentSkillSourceGroupViewModel(
     string source,
     string sourcePath,
-    IEnumerable<AgentSkillItemViewModel> skills)
+    IEnumerable<AgentSkillItemViewModel> skills,
+    string? displaySource = null)
 {
     public string Source { get; } = source;
+    public string DisplaySource { get; } = displaySource ?? source;
     public string SourcePath { get; } = sourcePath;
     public ObservableCollection<AgentSkillItemViewModel> Skills { get; } = new(skills);
 }
@@ -430,6 +531,7 @@ public sealed partial class AgentSkillItemViewModel : ObservableObject
 
     public AgentSkillItemViewModel(AgentSkillDefinition skill, string enabledText, string scriptsText, Func<string, bool, Task> setEnabled)
     {
+        Definition = skill;
         Id = skill.Id;
         Source = skill.Source;
         SourcePath = skill.SourceRoot;
@@ -446,6 +548,7 @@ public sealed partial class AgentSkillItemViewModel : ObservableObject
     }
 
     public string Id { get; }
+    public AgentSkillDefinition Definition { get; }
     public string Source { get; }
     public string SourcePath { get; }
     public string Name { get; }
@@ -456,6 +559,7 @@ public sealed partial class AgentSkillItemViewModel : ObservableObject
     public bool IsAiloSource { get; }
     public string EnabledText { get; }
     public string ScriptsText { get; }
+    public bool HasInstallMetadata => Definition.InstallMetadata is not null;
 
     [ObservableProperty] private bool _isEnabled;
 

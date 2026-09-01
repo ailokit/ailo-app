@@ -11,21 +11,42 @@ public sealed record AgentSkillDefinition(
     bool HasScripts,
     bool IsEnabled,
     DateTimeOffset LastSeenAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    AgentSkillInstallMetadata? InstallMetadata = null);
 
 /// <summary>One local directory that contributes Agent Skills.</summary>
 public sealed record AgentSkillSourceDirectory(string Name, string Path);
 
 /// <summary>One supported destination layout for an installed Agent Skill.</summary>
-public sealed record AgentSkillInstallType(string Name, string RelativeDirectory, string DefaultDirectory)
+public sealed record AgentSkillInstallType(
+    string Name,
+    string RelativeDirectory,
+    string DefaultDirectory)
 {
-    public string GetInstallDirectory(string? customBaseDirectory) => string.IsNullOrWhiteSpace(customBaseDirectory)
-        ? DefaultDirectory
-        : Path.Combine(Path.GetFullPath(customBaseDirectory), RelativeDirectory);
+    public string GetInstallDirectory(string? customBaseDirectory)
+    {
+        return string.IsNullOrWhiteSpace(customBaseDirectory)
+            ? DefaultDirectory
+            : Path.Combine(Path.GetFullPath(customBaseDirectory), RelativeDirectory);
+    }
 }
 
 /// <summary>A skill package discovered in a cloned Git repository.</summary>
 public sealed record AgentSkillInstallCandidate(string Id, string Name, string Description, string RelativeDirectory);
+
+/// <summary>Metadata written into a skill directory when Ailo installs or updates it.</summary>
+public sealed record AgentSkillInstallMetadata(
+    string RepositoryUrl,
+    DateTimeOffset InstalledAt,
+    DateTimeOffset UpdatedAt);
+
+/// <summary>Raised when an installed skill no longer exists in its recorded repository.</summary>
+public sealed class AgentSkillUpdateUnavailableException(string skillName, string repositoryUrl)
+    : InvalidOperationException($"Skill '{skillName}' was not found in the latest scan of '{repositoryUrl}'.")
+{
+    public string SkillName { get; } = skillName;
+    public string RepositoryUrl { get; } = repositoryUrl;
+}
 
 /// <summary>Current stage while a Git repository is being scanned for skills.</summary>
 public enum AgentSkillScanStep

@@ -392,7 +392,7 @@ public sealed class ChatService(
         var client = new OpenAIClient(new ApiKeyCredential(apiKey), options).GetChatClient(provider.ModelId);
         var agentSkillsSource = agentSkills is null
             ? null
-            : await agentSkills.CreateSourceAsync().ConfigureAwait(false);
+            : await agentSkills.CreateSourceAsync(workingDirectory: workspace.WorkspaceDirectory).ConfigureAwait(false);
 
         var tools = (await toolRegistry.GetTools(enabledToolNames).ConfigureAwait(false)).ToList();
         if (shellSession is not null)

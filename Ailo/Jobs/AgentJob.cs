@@ -101,7 +101,7 @@ public sealed class AgentJob(
                 .Replace([new WorkspaceEntry(workspaceDirectory, IsDirectory: true)]);
             var toolRegistry = scope.ServiceProvider.GetRequiredService<ChatToolRegistry>();
             var agentSkillsSource = await scope.ServiceProvider.GetRequiredService<AgentSkillsService>()
-                .CreateSourceAsync(cancellationToken).ConfigureAwait(false);
+                .CreateSourceAsync(workspaceDirectory, cancellationToken).ConfigureAwait(false);
             var tools = (await toolRegistry.GetRegistrations().ConfigureAwait(false))
                 .Where(registration => !WorkspaceFileToolNames.Contains(registration.Name))
                 .Select(registration => registration.Tool)

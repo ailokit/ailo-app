@@ -107,6 +107,7 @@ internal partial class SettingsWindow : Window
         else if (vm is AgentSkillsSettingsViewModel agentSkillsSettings)
         {
             agentSkillsSettings.AttachStorageProvider(StorageProvider);
+            agentSkillsSettings.AttachClipboard(Clipboard);
         }
         view.DataContext = vm;
         _ = initialize(vm);

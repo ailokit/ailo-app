@@ -45,6 +45,16 @@
     <data name="AgentSkillsSkillPath"><value>Skill file</value></data>
     <data name="AgentSkillsNoScripts"><value>No executable scripts</value></data>
     <data name="AgentSkillsUninstall"><value>Uninstall</value></data>
+    <data name="AgentSkillsUpdate"><value>Update</value></data>
+    <data name="AgentSkillsUpdating"><value>Updating skill…</value></data>
+    <data name="AgentSkillsUpdated"><value>Skill updated.</value></data>
+    <data name="AgentSkillsUpdateMissingWarning"><value>The latest repository no longer contains this skill. Delete the installed skill?</value></data>
+    <data name="AgentSkillsUpdateCancelled"><value>Skill update cancelled.</value></data>
+    <data name="AgentSkillsRemovedAfterUpdateMissing"><value>The skill was removed because it is no longer in the repository.</value></data>
+    <data name="AgentSkillsCopyPath"><value>Copy skill path</value></data>
+    <data name="AgentSkillsOpenFolder"><value>Open skill folder</value></data>
+    <data name="AgentSkillsPathCopied"><value>Skill path copied.</value></data>
+    <data name="AgentSkillsCustom"><value>Custom</value></data>
     <data name="AgentSkillsUninstalled"><value>Skill uninstalled.</value></data>
     <data name="AgentSkillsExternalUninstallWarning"><value>This skill is stored outside Ailo's own skill directory. Uninstalling it will permanently delete the entire skill folder and may affect other agents that use it. Source directory: {0}</value></data>
     <data name="AgentSkillsInstall"><value>Install</value></data>

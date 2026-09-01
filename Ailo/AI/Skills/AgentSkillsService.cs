@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Ailo.AI;
 using Ailo.Services;
 using Microsoft.Agents.AI;
 
@@ -15,33 +16,54 @@ namespace Ailo.AI.Skills;
 /// </summary>
 public sealed class AgentSkillsService
 {
+    private const string InstallMetadataFileName = ".ailo-skill.json";
     private static readonly Regex SkillNamePattern = new("^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly HashSet<string> ScriptExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".py", ".js", ".sh", ".ps1", ".cs", ".csx"
     };
+    private static readonly IReadOnlyList<string> WorkingDirectorySkillPaths =
+    [
+        Path.Combine(".ailo", "skills"),
+        "skills",
+        Path.Combine(".codex", "skills"),
+        Path.Combine(".claude", "skills"),
+        Path.Combine(".copilot", "skills"),
+        Path.Combine(".agents", "skills"),
+        Path.Combine(".config", "agents", "skills"),
+        Path.Combine(".gemini", "skills"),
+        Path.Combine(".opencode", "skills")
+    ];
 
     private readonly string _availabilityPath;
+    private readonly AppSettingsService? _settings;
     private readonly IReadOnlyList<AgentSkillSourceDirectory> _sources;
     private readonly IReadOnlyList<AgentSkillInstallType> _installTypes;
     private readonly SemaphoreSlim _availabilityGate = new(1, 1);
 
     public AgentSkillsService(AppPaths paths)
-        : this(paths.SkillsAvailabilityPath, CreateDefaultSources(paths), CreateDefaultInstallTypes(paths))
+        : this(paths.SkillsAvailabilityPath, CreateDefaultSources(paths), CreateDefaultInstallTypes(paths), null)
+    {
+    }
+
+    public AgentSkillsService(AppPaths paths, AppSettingsService settings)
+        : this(paths.SkillsAvailabilityPath, CreateDefaultSources(paths), CreateDefaultInstallTypes(paths), settings)
     {
     }
 
     internal AgentSkillsService(string availabilityPath, IReadOnlyList<AgentSkillSourceDirectory> sources)
-        : this(availabilityPath, sources, CreateInstallTypesFromSources(sources))
+        : this(availabilityPath, sources, CreateInstallTypesFromSources(sources), null)
     {
     }
 
     private AgentSkillsService(
         string availabilityPath,
         IReadOnlyList<AgentSkillSourceDirectory> sources,
-        IReadOnlyList<AgentSkillInstallType> installTypes)
+        IReadOnlyList<AgentSkillInstallType> installTypes,
+        AppSettingsService? settings)
     {
         _availabilityPath = availabilityPath;
+        _settings = settings;
         _sources = sources
             .Where(source => !string.IsNullOrWhiteSpace(source.Path))
             .GroupBy(source => Path.GetFullPath(source.Path), PathComparer)
@@ -58,11 +80,17 @@ public sealed class AgentSkillsService
     public IReadOnlyList<AgentSkillInstallType> InstallTypes => _installTypes;
 
     public async Task<IReadOnlyList<AgentSkillDefinition>> RefreshAsync(CancellationToken cancellationToken = default)
+        => await RefreshAsync(null, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>Refreshes skills and optionally includes standard skill directories in a working directory.</summary>
+    public async Task<IReadOnlyList<AgentSkillDefinition>> RefreshAsync(
+        string? workingDirectory,
+        CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
         var disabledDirectories = await ReadDisabledDirectoriesAsync(cancellationToken).ConfigureAwait(false);
         var discovered = new List<AgentSkillDefinition>();
-        foreach (var source in _sources)
+        foreach (var source in await GetSourcesAsync(cancellationToken, workingDirectory).ConfigureAwait(false))
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (!Directory.Exists(source.Path))
@@ -78,7 +106,8 @@ public sealed class AgentSkillsService
                 var directory = Path.GetDirectoryName(skillFile)!;
                 discovered.Add(new AgentSkillDefinition(
                     CreateId(directory), source.Name, source.Path, directory, frontmatter.Value.Name,
-                    frontmatter.Value.Description, ContainsScript(directory), !disabledDirectories.Contains(directory), now, now));
+                    frontmatter.Value.Description, ContainsScript(directory), !disabledDirectories.Contains(directory), now, now,
+                    ReadInstallMetadata(directory)));
             }
         }
 
@@ -86,8 +115,14 @@ public sealed class AgentSkillsService
     }
 
     public async Task<AgentFileSkillsSource?> CreateSourceAsync(CancellationToken cancellationToken = default)
+        => await CreateSourceAsync(null, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>Creates an enabled skill source, including skills from the supplied working directory.</summary>
+    public async Task<AgentFileSkillsSource?> CreateSourceAsync(
+        string? workingDirectory,
+        CancellationToken cancellationToken = default)
     {
-        var enabledDirectories = (await RefreshAsync(cancellationToken).ConfigureAwait(false))
+        var enabledDirectories = (await RefreshAsync(workingDirectory, cancellationToken).ConfigureAwait(false))
             .Where(skill => skill.IsEnabled)
             .Select(skill => skill.DirectoryPath)
             .Distinct(PathComparer)
@@ -95,6 +130,83 @@ public sealed class AgentSkillsService
         return enabledDirectories.Length == 0
             ? null
             : new AgentFileSkillsSource(enabledDirectories, RunSkillScriptAsync);
+    }
+
+    /// <summary>All custom skill roots selected by the user, in selection order.</summary>
+    public IReadOnlyList<string> CustomSkillsDirectories { get; private set; } = [];
+
+    /// <summary>The most recently selected custom skill root.</summary>
+    public string? CustomSkillsDirectory => CustomSkillsDirectories.LastOrDefault();
+
+    public async Task<string?> GetCustomSkillsDirectoryAsync(CancellationToken cancellationToken = default)
+    {
+        await LoadCustomSkillsDirectoryAsync(cancellationToken).ConfigureAwait(false);
+        return CustomSkillsDirectory;
+    }
+
+    private async Task<IReadOnlyList<AgentSkillSourceDirectory>> GetSourcesAsync(
+        CancellationToken cancellationToken,
+        string? workingDirectory = null)
+    {
+        await LoadCustomSkillsDirectoryAsync(cancellationToken).ConfigureAwait(false);
+        var sources = _sources
+            .Concat(CustomSkillsDirectories.Select(path => new AgentSkillSourceDirectory("Custom", path)));
+        if (!string.IsNullOrWhiteSpace(workingDirectory))
+        {
+            var normalizedWorkingDirectory = Path.GetFullPath(workingDirectory);
+            sources = sources.Concat(WorkingDirectorySkillPaths.Select(relativePath =>
+                new AgentSkillSourceDirectory(
+                    "Current workspace",
+                    Path.Combine(normalizedWorkingDirectory, relativePath))));
+        }
+
+        return sources
+            .GroupBy(source => Path.GetFullPath(source.Path), PathComparer)
+            .Select(group => group.First())
+            .ToArray();
+    }
+
+    private async Task LoadCustomSkillsDirectoryAsync(CancellationToken cancellationToken)
+    {
+        if (_settings is null)
+            return;
+
+        var savedPaths = await _settings.GetAsync(AppSettingsService.CustomAgentSkillsDirectoriesKey, cancellationToken)
+            .ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(savedPaths))
+        {
+            // Read the original single-directory setting for existing installations.
+            var legacyPath = await _settings.GetAsync(AppSettingsService.CustomAgentSkillsDirectoryKey, cancellationToken)
+                .ConfigureAwait(false);
+            savedPaths = string.IsNullOrWhiteSpace(legacyPath) ? null : legacyPath;
+        }
+
+        var paths = ParseCustomSkillDirectories(savedPaths);
+        CustomSkillsDirectories = paths;
+    }
+
+    private static IReadOnlyList<string> ParseCustomSkillDirectories(string? savedPaths)
+    {
+        if (string.IsNullOrWhiteSpace(savedPaths))
+            return [];
+
+        string[] paths;
+        try
+        {
+            paths = savedPaths.TrimStart().StartsWith("[", StringComparison.Ordinal)
+                ? JsonSerializer.Deserialize(savedPaths, AiloJsonSerializerContext.Default.StringArray) ?? []
+                : [savedPaths];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+
+        return paths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(Path.GetFullPath)
+            .Distinct(PathComparer)
+            .ToArray();
     }
 
     public async Task SetEnabledAsync(string directoryPath, bool isEnabled, CancellationToken cancellationToken = default)
@@ -203,7 +315,7 @@ public sealed class AgentSkillsService
     }
 
     /// <summary>Copies selected packages into the selected Agent Skill directory layout.</summary>
-    public Task<IReadOnlyList<AgentSkillInstallCandidate>> InstallAsync(
+    public async Task<IReadOnlyList<AgentSkillInstallCandidate>> InstallAsync(
         AgentSkillRepositoryScan repository,
         IEnumerable<string> candidateIds,
         AgentSkillInstallType installType,
@@ -237,6 +349,7 @@ public sealed class AgentSkillsService
             throw new IOException("One or more selected skill directories already exist at the destination.");
 
         Directory.CreateDirectory(installDirectory);
+        var installedAt = DateTimeOffset.UtcNow;
         try
         {
             foreach (var (skill, destination) in selectedSkills.Zip(destinations))
@@ -244,6 +357,23 @@ public sealed class AgentSkillsService
                 cancellationToken.ThrowIfCancellationRequested();
                 var sourceDirectory = GetRepositorySkillDirectory(repository, skill);
                 CopyDirectory(sourceDirectory, destination, cancellationToken);
+                WriteInstallMetadata(destination, new AgentSkillInstallMetadata(
+                    repository.RepositoryUrl,
+                    installedAt,
+                    installedAt));
+            }
+
+            if (!string.IsNullOrWhiteSpace(customBaseDirectory) && _settings is not null)
+            {
+                var customDirectories = CustomSkillsDirectories
+                    .Append(Path.GetFullPath(customBaseDirectory))
+                    .Distinct(PathComparer)
+                    .ToArray();
+                await _settings.SaveAsync(
+                    AppSettingsService.CustomAgentSkillsDirectoriesKey,
+                    JsonSerializer.Serialize(customDirectories, AiloJsonSerializerContext.Default.StringArray),
+                    cancellationToken).ConfigureAwait(false);
+                CustomSkillsDirectories = customDirectories;
             }
         }
         catch
@@ -253,7 +383,72 @@ public sealed class AgentSkillsService
             throw;
         }
 
-        return Task.FromResult<IReadOnlyList<AgentSkillInstallCandidate>>(selectedSkills);
+        return selectedSkills;
+    }
+
+    /// <summary>Scans an installed skill's recorded repository and replaces only that skill.</summary>
+    public async Task UpdateAsync(
+        AgentSkillDefinition skill,
+        CancellationToken cancellationToken = default,
+        IProgress<AgentSkillScanStep>? progress = null)
+    {
+        ArgumentNullException.ThrowIfNull(skill);
+        var metadata = skill.InstallMetadata
+            ?? throw new InvalidOperationException("This skill does not have installation metadata.");
+
+        using var repository = await ScanRepositoryAsync(metadata.RepositoryUrl, cancellationToken, progress)
+            .ConfigureAwait(false);
+        var candidate = repository.Skills.FirstOrDefault(item =>
+            string.Equals(item.Name, skill.Name, StringComparison.OrdinalIgnoreCase));
+        if (candidate is null)
+            throw new AgentSkillUpdateUnavailableException(skill.Name, metadata.RepositoryUrl);
+
+        var sourceDirectory = GetRepositorySkillDirectory(repository, candidate);
+        if (!Directory.Exists(skill.DirectoryPath))
+            throw new InvalidOperationException("The selected skill directory is no longer available.");
+
+        var parentDirectory = Path.GetDirectoryName(skill.DirectoryPath)
+            ?? throw new InvalidOperationException("The selected skill directory has no parent directory.");
+        var stagingDirectory = Path.Combine(parentDirectory, $".{skill.Name}.update-{Guid.NewGuid():N}");
+        var backupDirectory = Path.Combine(parentDirectory, $".{skill.Name}.backup-{Guid.NewGuid():N}");
+        var previousMoved = false;
+        var replacementMoved = false;
+        try
+        {
+            CopyDirectory(sourceDirectory, stagingDirectory, cancellationToken);
+            WriteInstallMetadata(stagingDirectory, metadata with { UpdatedAt = DateTimeOffset.UtcNow });
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Directory.Move(skill.DirectoryPath, backupDirectory);
+            previousMoved = true;
+            cancellationToken.ThrowIfCancellationRequested();
+            Directory.Move(stagingDirectory, skill.DirectoryPath);
+            replacementMoved = true;
+        }
+        catch
+        {
+            if (previousMoved && !Directory.Exists(skill.DirectoryPath) && Directory.Exists(backupDirectory))
+            {
+                try
+                {
+                    Directory.Move(backupDirectory, skill.DirectoryPath);
+                    previousMoved = false;
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+            throw;
+        }
+        finally
+        {
+            TryDeleteDirectory(stagingDirectory);
+            if (replacementMoved)
+                TryDeleteDirectory(backupDirectory);
+        }
     }
 
     private async Task<HashSet<string>> ReadDisabledDirectoriesAsync(CancellationToken cancellationToken)
@@ -345,7 +540,7 @@ public sealed class AgentSkillsService
 
         return
         [
-            new("Ailo", "skills", paths.SkillsDirectory),
+            new("Ailo", Path.Combine(".ailo", "skills"), paths.SkillsDirectory),
             new("Codex", Path.Combine(".codex", "skills"), codexDirectory),
             new("Claude Code", Path.Combine(".claude", "skills"), Path.Combine(profile, ".claude", "skills")),
             new("GitHub Copilot", Path.Combine(".copilot", "skills"), Path.Combine(profile, ".copilot", "skills")),
@@ -358,16 +553,14 @@ public sealed class AgentSkillsService
 
     private static IReadOnlyList<AgentSkillInstallType> CreateInstallTypesFromSources(IReadOnlyList<AgentSkillSourceDirectory> sources) =>
         sources
+            .Where(source => !string.Equals(source.Name, "Custom", StringComparison.OrdinalIgnoreCase))
             .GroupBy(source => source.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(group => new AgentSkillInstallType(
-                group.Key,
-                GetInstallRelativeDirectory(group.Key),
-                group.First().Path))
+            .Select(group => CreateInstallTypeForSource(group.First()))
             .ToArray();
 
     private static string GetInstallRelativeDirectory(string sourceName) => sourceName switch
     {
-        "Ailo" => "skills",
+        "Ailo" => Path.Combine(".ailo", "skills"),
         "Codex" => Path.Combine(".codex", "skills"),
         "Claude Code" => Path.Combine(".claude", "skills"),
         "GitHub Copilot" => Path.Combine(".copilot", "skills"),
@@ -377,6 +570,42 @@ public sealed class AgentSkillsService
         "OpenCode" => Path.Combine(".opencode", "skills"),
         _ => Path.Combine("skills", sourceName.ToLowerInvariant().Replace(' ', '-'))
     };
+
+    private static AgentSkillInstallType CreateInstallTypeForSource(AgentSkillSourceDirectory source) =>
+        new(source.Name, GetInstallRelativeDirectory(source.Name), source.Path);
+
+    private static AgentSkillInstallMetadata? ReadInstallMetadata(string directory)
+    {
+        var metadataPath = Path.Combine(directory, InstallMetadataFileName);
+        if (!File.Exists(metadataPath))
+            return null;
+
+        try
+        {
+            var json = File.ReadAllText(metadataPath);
+            var metadata = JsonSerializer.Deserialize(json, AiloJsonSerializerContext.Default.AgentSkillInstallMetadata);
+            return string.IsNullOrWhiteSpace(metadata?.RepositoryUrl) ? null : metadata;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static void WriteInstallMetadata(string directory, AgentSkillInstallMetadata metadata)
+    {
+        var metadataPath = Path.Combine(directory, InstallMetadataFileName);
+        var json = JsonSerializer.Serialize(metadata, AiloJsonSerializerContext.Default.AgentSkillInstallMetadata);
+        File.WriteAllText(metadataPath, json);
+    }
 
     private static string ValidateRepositoryUrl(string repositoryUrl)
     {
@@ -474,6 +703,8 @@ public sealed class AgentSkillsService
             cancellationToken.ThrowIfCancellationRequested();
             var relativePath = Path.GetRelativePath(source, file);
             if (IsGitMetadataPath(relativePath))
+                continue;
+            if (string.Equals(Path.GetFileName(relativePath), InstallMetadataFileName, StringComparison.OrdinalIgnoreCase))
                 continue;
             var sourceInfo = new FileInfo(file);
             if ((sourceInfo.Attributes & FileAttributes.ReparsePoint) != 0)
