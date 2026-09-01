@@ -38,6 +38,9 @@
     <data name="AgentSkillsSourcePath"><value>来源目录</value></data>
     <data name="AgentSkillsSkillPath"><value>技能文件</value></data>
     <data name="AgentSkillsNoScripts"><value>没有可执行脚本</value></data>
+    <data name="AgentSkillsUninstall"><value>卸载</value></data>
+    <data name="AgentSkillsUninstalled"><value>技能已卸载。</value></data>
+    <data name="AgentSkillsExternalUninstallWarning"><value>特别提醒：此技能存储在 Ailo 自己的技能目录之外。卸载将永久删除整个技能文件夹，并可能影响其他使用它的 Agent。来源目录：{0}</value></data>
     <data name="Refresh"><value>刷新</value></data>
     <data name="Tools">
         <value>工具</value>

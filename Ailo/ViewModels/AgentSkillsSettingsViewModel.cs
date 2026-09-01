@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Ailo.AI.Skills;
 using Ailo.Localization;
+using Ailo.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -10,11 +11,16 @@ namespace Ailo.ViewModels;
 public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
 {
     private readonly AgentSkillsService _agentSkills;
+    private readonly IConfirmationService? _confirmation;
 
-    public AgentSkillsSettingsViewModel(AgentSkillsService agentSkills, LocalizationService localization)
+    public AgentSkillsSettingsViewModel(
+        AgentSkillsService agentSkills,
+        LocalizationService localization,
+        IConfirmationService? confirmation = null)
         : base(localization)
     {
         _agentSkills = agentSkills;
+        _confirmation = confirmation;
     }
 
     public ObservableCollection<AgentSkillSourceGroupViewModel> Groups { get; } = [];
@@ -28,6 +34,36 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
 
     [RelayCommand]
     private Task RefreshAsync() => RefreshAsync(CancellationToken.None);
+
+    [RelayCommand(CanExecute = nameof(CanUninstallSkill))]
+    private async Task UninstallSkillAsync()
+    {
+        var skill = SelectedSkill;
+        if (skill is null)
+            return;
+
+        var confirmed = _confirmation is null ||
+            (skill.IsAiloSource
+                ? await _confirmation.ConfirmDeleteAsync(skill.Name)
+                : await _confirmation.ConfirmDeleteWithWarningAsync(
+                    skill.Name,
+                    string.Format(T("AgentSkillsExternalUninstallWarning"), skill.SourcePath)));
+        if (!confirmed)
+            return;
+
+        try
+        {
+            await _agentSkills.UninstallAsync(skill.DirectoryPath);
+            await RefreshAsync(CancellationToken.None);
+            StatusMessage = T("AgentSkillsUninstalled");
+        }
+        catch (Exception exception)
+        {
+            StatusMessage = exception.Message;
+        }
+    }
+
+    private bool CanUninstallSkill() => SelectedSkill is not null;
 
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
@@ -87,8 +123,11 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
             SelectedSkill = value.Skills.FirstOrDefault();
     }
 
-    partial void OnSelectedSkillChanged(AgentSkillItemViewModel? value) =>
+    partial void OnSelectedSkillChanged(AgentSkillItemViewModel? value)
+    {
         OnPropertyChanged(nameof(HasSelectedSkill));
+        UninstallSkillCommand.NotifyCanExecuteChanged();
+    }
 }
 
 public sealed class AgentSkillSourceGroupViewModel(
@@ -115,6 +154,7 @@ public sealed partial class AgentSkillItemViewModel : ObservableObject
         Description = skill.Description;
         DirectoryPath = skill.DirectoryPath;
         HasScripts = skill.HasScripts;
+        IsAiloSource = string.Equals(skill.Source, "Ailo", StringComparison.OrdinalIgnoreCase);
         EnabledText = enabledText;
         ScriptsText = scriptsText;
         _setEnabled = setEnabled;
@@ -130,6 +170,7 @@ public sealed partial class AgentSkillItemViewModel : ObservableObject
     public string DirectoryPath { get; }
     public string SkillFilePath => Path.Combine(DirectoryPath, "SKILL.md");
     public bool HasScripts { get; }
+    public bool IsAiloSource { get; }
     public string EnabledText { get; }
     public string ScriptsText { get; }
 

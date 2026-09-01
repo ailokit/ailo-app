@@ -66,7 +66,7 @@
         <DockPanel Grid.Row="1" Margin="10,2,10,10" LastChildFill="True" VerticalSpacing="8">
             <DockPanel DockPanel.Dock="Top" LastChildFill="True" HorizontalSpacing="4">
                 <Button Classes="model-selector-button" HorizontalAlignment="Left" Padding="0" Margin="0"
-                        Height="32" VerticalContentAlignment="Stretch" DockPanel.Dock="Left">
+                        Height="32" VerticalContentAlignment="Center" DockPanel.Dock="Left">
                     <Button.Content>
                         <Border BorderBrush="{DynamicResource InputControlBorderBrush}"
                                 BorderThickness="1" Padding="8,2" CornerRadius="{DynamicResource CornerRadiusInput}">

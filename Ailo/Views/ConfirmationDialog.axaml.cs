@@ -6,11 +6,13 @@ public partial class ConfirmationDialog : Avalonia.Controls.Window
 {
     public ConfirmationDialog() => InitializeComponent();
 
-    public ConfirmationDialog(string title, string message, string cancelLabel, string deleteLabel)
+    public ConfirmationDialog(string title, string message, string cancelLabel, string deleteLabel, string? warningMessage = null)
     {
         InitializeComponent();
         Title = title;
         MessageText.Text = message;
+        WarningText.Text = warningMessage;
+        WarningText.IsVisible = !string.IsNullOrWhiteSpace(warningMessage);
         CancelButton.Content = cancelLabel;
         DeleteButton.Content = deleteLabel;
     }

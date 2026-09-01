@@ -6,8 +6,13 @@
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
         Icon="/Assets/ailo.ico">
-    <StackPanel Margin="24" Spacing="16" MinWidth="320">
+    <StackPanel Margin="24" Spacing="16" MinWidth="320" MaxWidth="520">
         <TextBlock x:Name="MessageText" TextWrapping="Wrap"/>
+        <TextBlock x:Name="WarningText"
+                   TextWrapping="Wrap"
+                   Foreground="#C62828"
+                   FontWeight="SemiBold"
+                   IsVisible="False"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
             <Button x:Name="CancelButton" Click="OnCancelClick" Padding="12,7"/>
             <Button x:Name="DeleteButton" Classes="primary-button" Click="OnDeleteClick" Padding="12,7"/>

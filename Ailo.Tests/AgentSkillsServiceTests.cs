@@ -58,6 +58,36 @@ public sealed class AgentSkillsServiceTests : IDisposable
         Assert.Empty(await service.RefreshAsync());
     }
 
+    [Fact]
+    public async Task UninstallAsync_DeletesSkillDirectoryAndAvailabilityOverride()
+    {
+        var root = Path.Combine(_root, "skills");
+        WriteSkill(root, "remove-me", "A skill to remove.", withScript: true);
+        var availabilityPath = Path.Combine(_root, "skills-availability.json");
+        var service = new AgentSkillsService(availabilityPath, [new AgentSkillSourceDirectory("Ailo", root)]);
+        var skillDirectory = Path.Combine(root, "remove-me");
+
+        await service.SetEnabledAsync(skillDirectory, false);
+        await service.UninstallAsync(skillDirectory);
+
+        Assert.False(Directory.Exists(skillDirectory));
+        Assert.Empty(await service.RefreshAsync());
+        Assert.DoesNotContain(skillDirectory, await File.ReadAllTextAsync(availabilityPath));
+    }
+
+    [Fact]
+    public async Task UninstallAsync_RejectsSourceRoot()
+    {
+        var root = Path.Combine(_root, "skills");
+        WriteSkill(root, "keep-me", "A skill to keep.");
+        var service = new AgentSkillsService(Path.Combine(_root, "skills-availability.json"), [new AgentSkillSourceDirectory("Ailo", root)]);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.UninstallAsync(root));
+
+        Assert.True(Directory.Exists(root));
+        Assert.NotEmpty(await service.RefreshAsync());
+    }
+
     private static void WriteSkill(string root, string name, string description, bool withScript = false)
     {
         var directory = Path.Combine(root, name);

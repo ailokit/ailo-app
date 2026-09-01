@@ -35,7 +35,7 @@
         </Border>
         <Grid Grid.Row="1" ColumnDefinitions="auto,*">
             <Border Padding="16">
-                <Grid Width="120" RowDefinitions="Auto,*" RowSpacing="10">
+                <Grid RowDefinitions="Auto,*" RowSpacing="10">
                     <TextBlock Text="{Binding Localization[Settings]}" FontSize="20" FontWeight="Bold" Margin="0,0,0,12"/>
                     <Border Grid.Row="1" Classes="settings-navigation-menu">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

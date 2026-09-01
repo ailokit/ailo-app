@@ -7,7 +7,12 @@ namespace Ailo.Services;
 
 public sealed class ConfirmationService(LocalizationService localization) : IConfirmationService
 {
-    public async Task<bool> ConfirmDeleteAsync(string itemName)
+    public Task<bool> ConfirmDeleteAsync(string itemName) => ShowDeleteConfirmationAsync(itemName);
+
+    public Task<bool> ConfirmDeleteWithWarningAsync(string itemName, string warningMessage) =>
+        ShowDeleteConfirmationAsync(itemName, warningMessage);
+
+    private async Task<bool> ShowDeleteConfirmationAsync(string itemName, string? warningMessage = null)
     {
         if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -26,7 +31,8 @@ public sealed class ConfirmationService(LocalizationService localization) : ICon
             localization["ConfirmDeleteTitle"],
             string.Format(localization["ConfirmDeleteMessage"], itemName),
             localization["Cancel"],
-            localization["Delete"]);
+            localization["Delete"],
+            warningMessage);
         return await dialog.ShowDialog<bool>(owner);
     }
 }

@@ -44,6 +44,9 @@
     <data name="AgentSkillsSourcePath"><value>Source path</value></data>
     <data name="AgentSkillsSkillPath"><value>Skill file</value></data>
     <data name="AgentSkillsNoScripts"><value>No executable scripts</value></data>
+    <data name="AgentSkillsUninstall"><value>Uninstall</value></data>
+    <data name="AgentSkillsUninstalled"><value>Skill uninstalled.</value></data>
+    <data name="AgentSkillsExternalUninstallWarning"><value>This skill is stored outside Ailo's own skill directory. Uninstalling it will permanently delete the entire skill folder and may affect other agents that use it. Source directory: {0}</value></data>
     <data name="Refresh"><value>Refresh</value></data>
     <data name="Tools">
         <value>Tools</value>

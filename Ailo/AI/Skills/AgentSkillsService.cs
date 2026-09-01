@@ -101,6 +101,46 @@ public sealed class AgentSkillsService
         }
     }
 
+    /// <summary>
+    /// Permanently removes a discovered skill package from its containing directory.
+    /// The directory must be a currently discovered skill and cannot be one of the
+    /// configured source roots themselves.
+    /// </summary>
+    public async Task UninstallAsync(string directoryPath, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
+        var normalizedDirectory = Path.GetFullPath(directoryPath);
+        var skill = (await RefreshAsync(cancellationToken).ConfigureAwait(false))
+            .FirstOrDefault(item => PathComparer.Equals(item.DirectoryPath, normalizedDirectory));
+        if (skill is null)
+            throw new InvalidOperationException("The selected skill is no longer available.");
+
+        var sourceRoot = Path.GetFullPath(skill.SourceRoot);
+        var relativePath = Path.GetRelativePath(sourceRoot, normalizedDirectory);
+        if (relativePath is "." or ".." || relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal) || Path.IsPathRooted(relativePath))
+            throw new InvalidOperationException("Only a skill package directory can be uninstalled.");
+
+        var directoryInfo = new DirectoryInfo(normalizedDirectory);
+        if ((directoryInfo.Attributes & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidOperationException("Symbolic-link skill directories cannot be uninstalled from Ailo.");
+
+        Directory.Delete(normalizedDirectory, recursive: true);
+
+        // A deleted package no longer needs an availability override. Failure to
+        // persist this cleanup is harmless because the package is already gone.
+        await _availabilityGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var disabledDirectories = await ReadDisabledDirectoriesCoreAsync(cancellationToken).ConfigureAwait(false);
+            if (disabledDirectories.Remove(normalizedDirectory))
+                await WriteDisabledDirectoriesAsync(disabledDirectories, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _availabilityGate.Release();
+        }
+    }
+
     private async Task<HashSet<string>> ReadDisabledDirectoriesAsync(CancellationToken cancellationToken)
     {
         await _availabilityGate.WaitAsync(cancellationToken).ConfigureAwait(false);

@@ -37,13 +37,24 @@
         <Style Selector=":is(Button)">
             <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusButton}" />
             <Setter Property="MinHeight" Value="32" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector=":is(Button) /template/ ContentPresenter">
             <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusButton}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector=":is(Button) TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector=":is(Button) materialIcons|MaterialIcon">
+            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style Selector=":is(Button).primary-button">
             <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusControl}" />
             <Setter Property="Padding" Value="12,7" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Background" Value="{DynamicResource PrimaryButtonBackgroundBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource PrimaryButtonForegroundBrush}" />
         </Style>
@@ -75,6 +86,8 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="BorderBrush" Value="{DynamicResource InputControlBorderBrush}" />
             <Setter Property="Padding" Value="10,7" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector=":is(TextBox):focus">
             <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAltAccentBrush}" />

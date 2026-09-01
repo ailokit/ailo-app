@@ -73,6 +73,15 @@
                     <StackPanel Spacing="12" IsVisible="{Binding HasSelectedSkill}">
                         <DockPanel LastChildFill="True">
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Button Command="{Binding UninstallSkillCommand}"
+                                        Padding="7"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        BorderThickness="0"
+                                        ToolTip.Tip="{Binding Localization[AgentSkillsUninstall]}"
+                                        AutomationProperties.Name="{Binding Localization[AgentSkillsUninstall]}">
+                                    <materialIcons:MaterialIcon Kind="Delete" Width="16" Height="16" Foreground="#C62828"/>
+                                </Button>
                                 <TextBlock Text="{Binding SelectedSkill.EnabledText}" VerticalAlignment="Center"/>
                                 <ToggleSwitch IsChecked="{Binding SelectedSkill.IsEnabled, Mode=TwoWay}" OnContent="{x:Null}" OffContent="{x:Null}"/>
                             </StackPanel>
