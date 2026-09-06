@@ -19,6 +19,7 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
     private IClipboard? _clipboard;
     private AgentSkillRepositoryScan? _repositoryScan;
     private CancellationTokenSource? _scanCancellation;
+    private CancellationTokenSource? _refreshCancellation;
 
     public AgentSkillsSettingsViewModel(
         AgentSkillsService agentSkills,
@@ -362,13 +363,18 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
 
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
+        _refreshCancellation?.Cancel();
+        using var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _refreshCancellation = refreshCancellation;
+        var refreshToken = refreshCancellation.Token;
         try
         {
             // This view is initialized from the settings window. Keep the continuation on
             // Avalonia's UI context because Groups is bound directly by the page.
             var selectedDirectory = SelectedSkill?.DirectoryPath;
             var selectedSource = SelectedGroup?.Source;
-            var skills = await _agentSkills.RefreshAsync(cancellationToken);
+            var skills = await _agentSkills.RefreshAsync(refreshToken);
+            refreshToken.ThrowIfCancellationRequested();
             var grouped = skills
                 .GroupBy(skill => new { skill.Source, skill.SourceRoot })
                 .OrderBy(group => string.Equals(group.Key.Source, "Ailo", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
@@ -380,6 +386,7 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
                     string.Equals(group.Key.Source, "Custom", StringComparison.OrdinalIgnoreCase) ? T("AgentSkillsCustom") : null))
                 .ToArray();
 
+            refreshToken.ThrowIfCancellationRequested();
             Groups.Clear();
             foreach (var group in grouped)
                 Groups.Add(group);
@@ -388,9 +395,17 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
                 ?? SelectedGroup?.Skills.FirstOrDefault();
             StatusMessage = grouped.Length == 0 ? T("AgentSkillsEmpty") : string.Empty;
         }
+        catch (OperationCanceledException) when (refreshToken.IsCancellationRequested)
+        {
+        }
         catch (Exception exception)
         {
             StatusMessage = exception.Message;
+        }
+        finally
+        {
+            if (ReferenceEquals(_refreshCancellation, refreshCancellation))
+                _refreshCancellation = null;
         }
     }
 
@@ -500,6 +515,7 @@ public sealed partial class AgentSkillsSettingsViewModel : SettingsViewModelBase
 
     public override void Dispose()
     {
+        _refreshCancellation?.Cancel();
         _scanCancellation?.Cancel();
         DisposeRepositoryScan();
         base.Dispose();

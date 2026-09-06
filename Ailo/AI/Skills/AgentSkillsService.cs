@@ -89,29 +89,10 @@ public sealed class AgentSkillsService
     {
         var now = DateTimeOffset.UtcNow;
         var disabledDirectories = await ReadDisabledDirectoriesAsync(cancellationToken).ConfigureAwait(false);
-        var discovered = new List<AgentSkillDefinition>();
-        foreach (var source in await GetSourcesAsync(cancellationToken, workingDirectory).ConfigureAwait(false))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!Directory.Exists(source.Path))
-                continue;
-
-            foreach (var skillFile in EnumerateSkillFiles(source.Path))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var frontmatter = ReadFrontmatter(skillFile);
-                if (frontmatter is null)
-                    continue;
-
-                var directory = Path.GetDirectoryName(skillFile)!;
-                discovered.Add(new AgentSkillDefinition(
-                    CreateId(directory), source.Name, source.Path, directory, frontmatter.Value.Name,
-                    frontmatter.Value.Description, ContainsScript(directory), !disabledDirectories.Contains(directory), now, now,
-                    ReadInstallMetadata(directory)));
-            }
-        }
-
-        return discovered;
+        var sources = await GetSourcesAsync(cancellationToken, workingDirectory).ConfigureAwait(false);
+        return await RunOnDedicatedThreadAsync(
+            () => DiscoverSkills(sources, disabledDirectories, now, cancellationToken),
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AgentFileSkillsSource?> CreateSourceAsync(CancellationToken cancellationToken = default)
@@ -285,27 +266,11 @@ public sealed class AgentSkillsService
             await CloneRepositoryAsync(normalizedUrl, temporaryRoot, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             progress?.Report(AgentSkillScanStep.ScanningSkills);
-            var candidates = EnumerateSkillFiles(temporaryRoot, cancellationToken)
-                .Where(skillFile => !IsGitMetadataPath(Path.GetRelativePath(temporaryRoot, skillFile)))
-                .Select(skillFile =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var directory = Path.GetDirectoryName(skillFile)!;
-                    var frontmatter = ReadFrontmatter(skillFile);
-                    return frontmatter is null
-                        ? null
-                        : new AgentSkillInstallCandidate(
-                            CreateId(Path.Combine(temporaryRoot, Path.GetRelativePath(temporaryRoot, directory))),
-                            frontmatter.Value.Name,
-                            frontmatter.Value.Description,
-                            Path.GetRelativePath(temporaryRoot, directory));
-                })
-                .Where(candidate => candidate is not null)
-                .Cast<AgentSkillInstallCandidate>()
-                .OrderBy(candidate => candidate.Name, StringComparer.Ordinal)
-                .ToArray();
+            var orderedCandidates = await RunOnDedicatedThreadAsync(
+                () => ScanRepositorySkills(temporaryRoot, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            return new AgentSkillRepositoryScan(normalizedUrl, temporaryRoot, candidates);
+            return new AgentSkillRepositoryScan(normalizedUrl, temporaryRoot, orderedCandidates);
         }
         catch
         {
@@ -573,6 +538,72 @@ public sealed class AgentSkillsService
 
     private static AgentSkillInstallType CreateInstallTypeForSource(AgentSkillSourceDirectory source) =>
         new(source.Name, GetInstallRelativeDirectory(source.Name), source.Path);
+
+    private static IReadOnlyList<AgentSkillDefinition> DiscoverSkills(
+        IReadOnlyList<AgentSkillSourceDirectory> sources,
+        IReadOnlySet<string> disabledDirectories,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var discovered = new List<AgentSkillDefinition>();
+        foreach (var source in sources)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!Directory.Exists(source.Path))
+                continue;
+
+            foreach (var skillFile in EnumerateSkillFiles(source.Path, cancellationToken))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var frontmatter = ReadFrontmatter(skillFile);
+                if (frontmatter is null)
+                    continue;
+
+                var directory = Path.GetDirectoryName(skillFile)!;
+                discovered.Add(new AgentSkillDefinition(
+                    CreateId(directory), source.Name, source.Path, directory, frontmatter.Value.Name,
+                    frontmatter.Value.Description, ContainsScript(directory), !disabledDirectories.Contains(directory), now, now,
+                    ReadInstallMetadata(directory)));
+            }
+        }
+
+        return discovered;
+    }
+
+    private static IReadOnlyList<AgentSkillInstallCandidate> ScanRepositorySkills(
+        string temporaryRoot,
+        CancellationToken cancellationToken)
+    {
+        var candidates = new List<AgentSkillInstallCandidate>();
+        foreach (var skillFile in EnumerateSkillFiles(temporaryRoot, cancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsGitMetadataPath(Path.GetRelativePath(temporaryRoot, skillFile)))
+                continue;
+
+            var directory = Path.GetDirectoryName(skillFile)!;
+            var frontmatter = ReadFrontmatter(skillFile);
+            if (frontmatter is null)
+                continue;
+
+            candidates.Add(new AgentSkillInstallCandidate(
+                CreateId(Path.Combine(temporaryRoot, Path.GetRelativePath(temporaryRoot, directory))),
+                frontmatter.Value.Name,
+                frontmatter.Value.Description,
+                Path.GetRelativePath(temporaryRoot, directory)));
+        }
+
+        return candidates.OrderBy(candidate => candidate.Name, StringComparer.Ordinal).ToArray();
+    }
+
+    private static Task<TResult> RunOnDedicatedThreadAsync<TResult>(
+        Func<TResult> operation,
+        CancellationToken cancellationToken) =>
+        Task.Factory.StartNew(
+            operation,
+            cancellationToken,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
 
     private static AgentSkillInstallMetadata? ReadInstallMetadata(string directory)
     {

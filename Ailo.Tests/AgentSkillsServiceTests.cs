@@ -11,6 +11,19 @@ public sealed class AgentSkillsServiceTests : IDisposable
     private readonly string _root = Path.Combine(Path.GetTempPath(), "Ailo.Tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
+    public void Constructor_UsesApplicationDataSkillsDirectoryForAiloDefaults()
+    {
+        var paths = new AppPaths(_root);
+        var service = new AgentSkillsService(paths);
+
+        var source = Assert.Single(service.Sources, item => item.Name == "Ailo");
+        var installType = Assert.Single(service.InstallTypes, item => item.Name == "Ailo");
+
+        Assert.Equal(paths.SkillsDirectory, source.Path);
+        Assert.Equal(paths.SkillsDirectory, installType.DefaultDirectory);
+    }
+
+    [Fact]
     public async Task RefreshAsync_DiscoversSkillsBySourceAndPersistsAvailability()
     {
         var ailoRoot = Path.Combine(_root, "ailo-skills");
