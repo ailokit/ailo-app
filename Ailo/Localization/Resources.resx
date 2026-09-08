@@ -22,7 +22,7 @@
         <value>Settings</value>
     </data>
     <data name="CleanMode"><value>Clean mode</value></data>
-    <data name="CleanModeDescription"><value>Only allow opening webpages; disable skills, MCP, and other tools.</value></data>
+    <data name="CleanModeDescription"><value>Only allow fetching webpage content; disable skills, MCP, and other tools.</value></data>
     <data name="AlwaysOnTop">
         <value>Always on top</value>
     </data>

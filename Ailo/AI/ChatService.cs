@@ -150,7 +150,7 @@ public sealed class ChatService(
                 : await mcpClientService.CreateSessionAsync(cancellationToken).ConfigureAwait(false);
             shellSession = cleanMode ? null : await GetShellSessionAsync(conversationId, cancellationToken).ConfigureAwait(false);
             agent = await CreateAgent(provider, cleanMode ? null : snapshot.SystemPrompt,
-                cleanMode ? new HashSet<string>(["open_webpage_in_browser"], StringComparer.Ordinal) : enabledToolNames,
+                cleanMode ? new HashSet<string>(["fetch_webpage_content"], StringComparer.Ordinal) : enabledToolNames,
                 mcpSession.Registrations, shellSession, cleanMode).ConfigureAwait(false);
             session = await RestoreOrCreateSessionAsync(agent, conversation, cancellationToken).ConfigureAwait(false);
             RemoveThinkingFromSession(session);
