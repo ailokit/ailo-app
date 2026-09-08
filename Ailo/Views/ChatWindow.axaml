@@ -169,7 +169,13 @@
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding Localization[Tools]}"
                                            FontWeight="SemiBold" Margin="2,0,0,2" />
-                                <ItemsControl ItemsSource="{Binding SessionTools}">
+                                <ToggleSwitch IsChecked="{Binding CleanMode, Mode=TwoWay}"
+                                              OnContent="{Binding Localization[CleanMode]}"
+                                              OffContent="{Binding Localization[CleanMode]}"
+                                              ToolTip.Tip="{Binding Localization[CleanModeDescription]}"
+                                              Padding="4,3" />
+                                <ItemsControl ItemsSource="{Binding SessionTools}"
+                                              IsEnabled="{Binding AreSessionToolsEnabled}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SessionToolSelection">
                                             <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"

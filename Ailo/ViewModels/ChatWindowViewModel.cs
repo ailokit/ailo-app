@@ -125,6 +125,10 @@ public sealed partial class ChatWindowViewModel : ViewModelBase
 
     [ObservableProperty] private Skill? _selectedSkill;
 
+    [ObservableProperty] private bool _cleanMode;
+
+    public bool AreSessionToolsEnabled => !CleanMode;
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendCommand), nameof(SendOrStopCommand))]
     private string _draft = string.Empty;
@@ -472,7 +476,7 @@ public sealed partial class ChatWindowViewModel : ViewModelBase
             try
             {
                 var selectedTools = SelectedToolNames;
-                await foreach (var update in _chat.SendStreamingAsync(_conversation.Id, text, attachments, selectedTools, _sendCancellation.Token)
+                await foreach (var update in _chat.SendStreamingAsync(_conversation.Id, text, attachments, selectedTools, CleanMode, _sendCancellation.Token)
                                    .ConfigureAwait(false))
                     await channel.Writer.WriteAsync(update, _sendCancellation.Token).ConfigureAwait(false);
                 channel.Writer.TryComplete();
@@ -608,6 +612,8 @@ public sealed partial class ChatWindowViewModel : ViewModelBase
         if (e.PropertyName == nameof(SessionToolSelection.IsSelected))
             OnPropertyChanged(nameof(SelectedToolNames));
     }
+
+    partial void OnCleanModeChanged(bool value) => OnPropertyChanged(nameof(AreSessionToolsEnabled));
 
     // ── Navigation ───────────────────────────────────────────────────────
 

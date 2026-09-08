@@ -77,6 +77,8 @@
     <data name="Tools">
         <value>工具</value>
     </data>
+    <data name="CleanMode"><value>纯净模式</value></data>
+    <data name="CleanModeDescription"><value>仅允许打开网页，不使用技能、MCP 或其他工具。</value></data>
     <data name="ToolSettings">
         <value>工具设置</value>
     </data>

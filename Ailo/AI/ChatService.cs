@@ -68,7 +68,7 @@ public sealed class ChatService(
         string message,
         IReadOnlyList<MessageAttachment>? attachments = null,
         CancellationToken cancellationToken = default) =>
-        SendStreamingAsync(conversationId, message, attachments, null, cancellationToken);
+        SendStreamingAsync(conversationId, message, attachments, null, false, cancellationToken);
 
     /// <summary>Streams a response with the tool subset selected for the current chat session.</summary>
     public IAsyncEnumerable<ChatStreamUpdate> SendStreamingAsync(
@@ -77,13 +77,23 @@ public sealed class ChatService(
         IReadOnlyList<MessageAttachment>? attachments,
         IReadOnlySet<string>? enabledToolNames,
         CancellationToken cancellationToken = default) =>
-        SendStreamingCoreAsync(conversationId, message, attachments, enabledToolNames, cancellationToken);
+        SendStreamingAsync(conversationId, message, attachments, enabledToolNames, false, cancellationToken);
+
+    public IAsyncEnumerable<ChatStreamUpdate> SendStreamingAsync(
+        string conversationId,
+        string message,
+        IReadOnlyList<MessageAttachment>? attachments,
+        IReadOnlySet<string>? enabledToolNames,
+        bool cleanMode,
+        CancellationToken cancellationToken = default) =>
+        SendStreamingCoreAsync(conversationId, message, attachments, enabledToolNames, cleanMode, cancellationToken);
 
     private async IAsyncEnumerable<ChatStreamUpdate> SendStreamingCoreAsync(
         string conversationId,
         string message, 
         IReadOnlyList<MessageAttachment>? attachments, 
-        IReadOnlySet<string>? enabledToolNames, 
+        IReadOnlySet<string>? enabledToolNames,
+        bool cleanMode,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var lease = await sessionLock.AcquireAsync(conversationId, cancellationToken).ConfigureAwait(false);
@@ -135,11 +145,13 @@ public sealed class ChatService(
                 throw new InvalidOperationException("The saved session no longer matches its provider configuration. Create a new conversation to continue.");
             }
 
-            mcpSession = mcpClientService is null
+            mcpSession = cleanMode || mcpClientService is null
                 ? new McpToolSession([], [])
                 : await mcpClientService.CreateSessionAsync(cancellationToken).ConfigureAwait(false);
-            shellSession = await GetShellSessionAsync(conversationId, cancellationToken).ConfigureAwait(false);
-            agent = await CreateAgent(provider, snapshot.SystemPrompt, enabledToolNames, mcpSession.Registrations, shellSession).ConfigureAwait(false);
+            shellSession = cleanMode ? null : await GetShellSessionAsync(conversationId, cancellationToken).ConfigureAwait(false);
+            agent = await CreateAgent(provider, cleanMode ? null : snapshot.SystemPrompt,
+                cleanMode ? new HashSet<string>(["open_webpage_in_browser"], StringComparer.Ordinal) : enabledToolNames,
+                mcpSession.Registrations, shellSession, cleanMode).ConfigureAwait(false);
             session = await RestoreOrCreateSessionAsync(agent, conversation, cancellationToken).ConfigureAwait(false);
             RemoveThinkingFromSession(session);
         }
@@ -375,7 +387,8 @@ public sealed class ChatService(
         string? instructions,
         IReadOnlySet<string>? enabledToolNames,
         IReadOnlyList<ChatToolRegistration> mcpRegistrations,
-        ShellToolSession? shellSession)
+        ShellToolSession? shellSession,
+        bool cleanMode)
     {
         if (provider.ProviderType is ProviderType.Anthropic)
         {
@@ -397,6 +410,9 @@ public sealed class ChatService(
         var tools = (await toolRegistry.GetTools(enabledToolNames).ConfigureAwait(false)).ToList();
         if (shellSession is not null)
             tools.Add(shellSession.Tool);
+        var mcpTools = cleanMode
+            ? Enumerable.Empty<AITool>()
+            : mcpRegistrations.Select(registration => registration.Tool);
 
         var shellInstructions = shellToolConfiguration?.IsEnabled == false
             ? "Shell execution is disabled in the tool settings. Do not attempt shell commands."
@@ -436,14 +452,14 @@ public sealed class ChatService(
                 Reasoning = new ReasoningOptions { Output = ReasoningOutput.Full },
                 Tools = [
                     .. tools,
-                    .. mcpRegistrations.Select(registration => registration.Tool)
+                    .. mcpTools
                 ]
             },
             AIContextProviders = shellSession is null ? null : [shellSession.EnvironmentProvider],
             // The source contains one root per enabled SKILL.md directory. This keeps disabled
             // skills out of the framework's discovery pass rather than merely hiding them in UI.
-            AgentSkillsSource = agentSkillsSource,
-            DisableAgentSkillsProvider = agentSkillsSource is null,
+            AgentSkillsSource = cleanMode ? null : agentSkillsSource,
+            DisableAgentSkillsProvider = cleanMode || agentSkillsSource is null,
             // Skills are configured from local, user-controlled directories. Approve only the
             // framework's load/read/run skill tools so a skill script can execute without an
             // interactive approval round; Ailo's unrelated tools keep their existing behavior.
